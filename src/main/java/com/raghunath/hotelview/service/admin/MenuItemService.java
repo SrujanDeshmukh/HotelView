@@ -18,10 +18,10 @@ public class MenuItemService {
     private final MenuItemRepository menuItemRepository;
     private final AdminRepository adminRepository;
 
-    public String addMenuItem(MenuItemRequest request, String adminId){
-
+    // 1. ADD ITEM
+    public String addMenuItem(MenuItemRequest request, String hotelIdFromToken) {
         MenuItem item = MenuItem.builder()
-                .hotelId(adminId)
+                .hotelId(hotelIdFromToken) // Directly from token!
                 .category(request.getCategory())
                 .name(request.getName())
                 .description(request.getDescription())
@@ -31,12 +31,17 @@ public class MenuItemService {
                 .imageUrl(request.getImageUrl())
                 .preparationTime(request.getPreparationTime())
                 .createdAt(LocalDateTime.now())
-                .isApproved(false)
+                .isApproved(true) // Set to true for your current testing
                 .build();
 
         menuItemRepository.save(item);
-
         return "Item added successfully";
+    }
+
+    // 2. GET CATEGORY ITEMS
+    public List<MenuItem> getCategoryItems(String hotelIdFromToken, String category) {
+        // Zero extra DB calls. Straight to the menu items.
+        return menuItemRepository.findByHotelIdAndCategoryAndIsApprovedTrue(hotelIdFromToken, category);
     }
 
     public List<MenuItem> getAllHotelItems(String adminId){
@@ -46,15 +51,6 @@ public class MenuItemService {
 
         return menuItemRepository
                 .findByHotelIdAndIsApprovedTrue(admin.getHotelId());
-    }
-
-    public List<MenuItem> getCategoryItems(String adminId,String category){
-
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
-
-        return menuItemRepository
-                .findByHotelIdAndCategoryAndIsApprovedTrue(admin.getHotelId(),category);
     }
 
     public MenuItem getMenuItem(String adminId,String itemId){

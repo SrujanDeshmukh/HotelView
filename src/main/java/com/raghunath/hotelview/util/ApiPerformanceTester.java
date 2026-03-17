@@ -21,11 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Profile("dev")
 public class ApiPerformanceTester implements CommandLineRunner {
 
-    private final boolean RUN_STRESS_TEST = false;
+    private final boolean RUN_STRESS_TEST = true;
     private final String URL = "https://hotelview.onrender.com/api/v1/menu/add";
 
     // PASTE YOUR TOKEN HERE
-    private final String ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OWFjN2Y3NTIxN2Q5NjI2ZmM5ZmUyMjMiLCJpYXQiOjE3NzM3NjcyOTEsImV4cCI6MTc3Mzc2ODE5MX0.WNaxA13PpbK0Be2bUPRmLf_flCvtowHk9mLd67i3-Sk";
+    private final String ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OWFjN2Y3NTIxN2Q5NjI2ZmM5ZmUyMjMiLCJpYXQiOjE3NzM3Nzg1OTIsImV4cCI6MTc3Mzc3OTQ5Mn0.Hue9YZUTuQburhJG-7TR6BnKEj5W5DJ4Wi_nTFtM2zk";
 
     @Override
     public void run(String... args) throws Exception {

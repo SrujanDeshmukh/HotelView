@@ -21,9 +21,11 @@ public class AdminAuthService {
 
     public LoginResponse login(LoginRequest request) {
 
+        // 1. Find the Admin by their public mobile number
         Admin admin = adminRepository.findByMobile(request.getMobile())
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
+        // 2. Security Checks
         if (!admin.isApproved()) {
             throw new RuntimeException("Hotel not approved. Contact Madhava Global.");
         }
@@ -36,13 +38,16 @@ public class AdminAuthService {
             throw new RuntimeException("Invalid password");
         }
 
-        String accessToken = jwtUtil.generateAccessToken(admin.getId());
-        String refreshToken = jwtUtil.generateRefreshToken(admin.getId());
+        // 3. INDUSTRY STANDARD CHANGE:
+        // We put the HOTEL ID in the token. Now, the token represents the Business,
+        // allowing any authorized staff to manage the same menu.
+        String accessToken = jwtUtil.generateAccessToken(admin.getHotelId());
+        String refreshToken = jwtUtil.generateRefreshToken(admin.getHotelId());
 
         return LoginResponse.builder()
                 .message("Login successful")
-                .adminId(admin.getId())
-                .hotelId(admin.getHotelId())
+                .adminId(admin.getId())   // Internal Admin ID (for profile)
+                .hotelId(admin.getHotelId()) // Unique Hotel ID (for data)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
