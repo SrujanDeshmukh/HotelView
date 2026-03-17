@@ -18,10 +18,10 @@ public class MenuItemService {
     private final MenuItemRepository menuItemRepository;
     private final AdminRepository adminRepository;
 
-    public String addMenuItem(MenuItemRequest request){
+    public String addMenuItem(MenuItemRequest request, String adminId){
 
         MenuItem item = MenuItem.builder()
-                .hotelId(request.getHotelId())
+                .hotelId(adminId)
                 .category(request.getCategory())
                 .name(request.getName())
                 .description(request.getDescription())

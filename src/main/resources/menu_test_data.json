@@ -1,0 +1,562 @@
+[
+  {
+    "category": "Starter",
+    "name": "French Fries",
+    "description": "Crispy golden fried potato sticks",
+    "price": 80,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/french-fries_hdylr1.png",
+    "preparationTime": 10
+  },
+  {
+    "category": "Starter",
+    "name": "Masala French Fries",
+    "description": "Crispy fries tossed with Indian spices",
+    "price": 100,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/asala-french-fries_swbkrc.png",
+    "preparationTime": 12
+  },
+  {
+    "category": "Starter",
+    "name": "Veg Manchurian",
+    "description": "Deep fried vegetable balls in tangy sauce",
+    "price": 120,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-manchurian_ye6p5c.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Starter",
+    "name": "Paneer Chilli",
+    "description": "Spicy paneer cubes with bell peppers and onions",
+    "price": 150,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/paneer-chilli_pmvpuj.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Starter",
+    "name": "Hakka Noodles",
+    "description": "Stir-fried noodles with vegetables",
+    "price": 110,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/hakka-noodles_dpv5ep.jpg",
+    "preparationTime": 12
+  },
+  {
+    "category": "Starter",
+    "name": "Schezwan Noodles",
+    "description": "Spicy noodles with schezwan sauce",
+    "price": 110,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/schezwan-noodles_dpjm0s.jpg",
+    "preparationTime": 12
+  },
+  {
+    "category": "Starter",
+    "name": "Veg Lollipop",
+    "description": "Crispy vegetable lollipops with tangy dip",
+    "price": 160,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-lollipop_vhhugc.jpg",
+    "preparationTime": 18
+  },
+  {
+    "category": "Starter",
+    "name": "Chana Roast",
+    "description": "Roasted chickpeas with aromatic spices",
+    "price": 110,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/chana-roast_u7m7po.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Starter",
+    "name": "Chana Chilli",
+    "description": "Spicy chickpeas in Indo-Chinese style",
+    "price": 130,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/chana-chilli_nhridv.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Starter",
+    "name": "Paneer 65",
+    "description": "Spicy fried paneer cubes with curry leaves",
+    "price": 160,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/paneer-65_xcxm3b.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Starter",
+    "name": "Veg 65",
+    "description": "Crispy fried vegetables with spicy coating",
+    "price": 150,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-65_tbvqps.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Starter",
+    "name": "Hara Bhara Kabab",
+    "description": "Green vegetable kebabs with spinach and peas",
+    "price": 150,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/hara-bhara-kabab_pokjcz.jpg",
+    "preparationTime": 18
+  },
+  {
+    "category": "Starter",
+    "name": "Garlic Fry",
+    "description": "Crispy fried vegetables tossed in garlic sauce",
+    "price": 150,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/garlic-fry_ebtg05.jpg",
+    "preparationTime": 12
+  },
+  {
+    "category": "Starter",
+    "name": "Paneer Tikka Dry",
+    "description": "Grilled paneer cubes marinated in tandoori spices",
+    "price": 200,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/paneer-tikka-dry_btgcyl.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Papad",
+    "name": "Roasted Papad",
+    "description": "Crispy roasted lentil wafers",
+    "price": 15,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/roasted-papad_hseyf1.jpg",
+    "preparationTime": 2
+  },
+  {
+    "category": "Papad",
+    "name": "Fried Papad",
+    "description": "Deep fried crispy papad",
+    "price": 20,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/fried-papad_fracuv.jpg",
+    "preparationTime": 3
+  },
+  {
+    "category": "Papad",
+    "name": "Masala Papad",
+    "description": "Papad topped with onion tomato and spices",
+    "price": 25,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/masala-papad_cr34nu.jpg",
+    "preparationTime": 5
+  },
+  {
+    "category": "Papad",
+    "name": "Nagli Papad",
+    "description": "Ragi papad roasted to perfection",
+    "price": 30,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/nagli-papad_gbvqvf.jpg",
+    "preparationTime": 3
+  },
+  {
+    "category": "Papad",
+    "name": "Papad Churi",
+    "description": "Crushed papad mixed with spices and onions",
+    "price": 50,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/papad-churi_slmkt2.jpg",
+    "preparationTime": 5
+  },
+  {
+    "category": "Salad",
+    "name": "Green Salad",
+    "description": "Fresh cucumber, carrots, and lettuce",
+    "price": 50,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/green-salad_ooirg5.jpg",
+    "preparationTime": 5
+  },
+  {
+    "category": "Salad",
+    "name": "Tomato Salad",
+    "description": "Sliced tomatoes with onions and lemon",
+    "price": 50,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/tomato-salad_ntnjcx.jpg",
+    "preparationTime": 5
+  },
+  {
+    "category": "Beverage",
+    "name": "Masala Buttermilk",
+    "description": "Spiced yogurt drink with roasted cumin",
+    "price": 25,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/masala-buttermilk_rwwv9r.jpg",
+    "preparationTime": 3
+  },
+  {
+    "category": "Beverage",
+    "name": "Boondi Raita",
+    "description": "Yogurt with crispy boondi and spices",
+    "price": 50,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/boondi-raita_jyxjj2.jpg",
+    "preparationTime": 5
+  },
+  {
+    "category": "Beverage",
+    "name": "Lassi",
+    "description": "Sweet yogurt drink",
+    "price": 50,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/lassi_wsvcy7.jpg",
+    "preparationTime": 3
+  },
+  {
+    "category": "Beverage",
+    "name": "Lemon Juice",
+    "description": "Fresh lime water with sugar and salt",
+    "price": 20,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/lemon-juice_qm3vpq.jpg",
+    "preparationTime": 3
+  },
+  {
+    "category": "Beverage",
+    "name": "Curd",
+    "description": "Fresh homemade yogurt",
+    "price": 50,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/curd_eabx6r.jpg",
+    "preparationTime": 2
+  },
+  {
+    "category": "Beverage",
+    "name": "Water Bottle",
+    "description": "Packaged drinking water",
+    "price": 20,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/water-bottle_roemwq.jpg",
+    "preparationTime": 1
+  },
+  {
+    "category": "Soup",
+    "name": "Tomato Soup",
+    "description": "Classic tomato soup with cream",
+    "price": 80,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/tomato-soup_ide1ef.jpg",
+    "preparationTime": 10
+  },
+  {
+    "category": "Soup",
+    "name": "Manchow Soup",
+    "description": "Spicy Indo-Chinese soup with vegetables",
+    "price": 90,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/manchow-soup_wesnli.jpg",
+    "preparationTime": 12
+  },
+  {
+    "category": "Soup",
+    "name": "Hot & Sour Soup",
+    "description": "Tangy and spicy vegetable soup",
+    "price": 90,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/hot-sour-soup_pcppyh.jpg",
+    "preparationTime": 12
+  },
+  {
+    "category": "Soup",
+    "name": "Manchurian Soup",
+    "description": "Soup with vegetable manchurian balls",
+    "price": 90,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/manchurian-soup_vagrgp.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Soup",
+    "name": "Sweet Corn Soup",
+    "description": "Creamy soup with sweet corn kernels",
+    "price": 90,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/sweet-corn-soup_a7pewh.jpg",
+    "preparationTime": 10
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Handi",
+    "description": "Mixed vegetables in rich gravy",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-handi_sghfqj.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Mushroom Masala",
+    "description": "Mushrooms cooked in spicy tomato gravy",
+    "price": 150,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-mushroom-masala_mzousd.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Methi Matar Malai",
+    "description": "Fenugreek and peas in creamy sauce",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/methi-matar-malai_kd904h.jpg",
+    "preparationTime": 18
+  },
+  {
+    "category": "Main Course",
+    "name": "Sev Tomato",
+    "description": "Crispy sev in tangy tomato curry",
+    "price": 120,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/sev-tomato_olewv1.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Main Course",
+    "name": "Sev Masala",
+    "description": "Sev in spicy onion tomato gravy",
+    "price": 120,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/sev-masala_faza1d.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Main Course",
+    "name": "Sev Milk Curry",
+    "description": "Crispy sev in creamy milk curry",
+    "price": 120,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/sev-milk-curry_prj80c.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Main Course",
+    "name": "Chana Masala",
+    "description": "Chickpeas in aromatic spiced gravy",
+    "price": 110,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/chana-masala_xyht2u.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Baingan Bharta",
+    "description": "Smoky roasted eggplant mash",
+    "price": 100,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/baingan-bharta_yvhby8.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Aloo Matar",
+    "description": "Potatoes and peas in tomato gravy",
+    "price": 100,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/aloo-matar_stfgbs.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Main Course",
+    "name": "Jeera Aloo",
+    "description": "Cumin flavored baby potatoes",
+    "price": 110,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/jeera-aloo_iypn5k.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Main Course",
+    "name": "Aloo Gobi",
+    "description": "Potatoes and cauliflower dry curry",
+    "price": 100,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/aloo-gobi_pvrwoq.jpg",
+    "preparationTime": 18
+  },
+  {
+    "category": "Main Course",
+    "name": "Bhendi Fry",
+    "description": "Crispy fried okra with spices",
+    "price": 110,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/bhendi-fry_reahuz.jpg",
+    "preparationTime": 15
+  },
+  {
+    "category": "Main Course",
+    "name": "Bhendi Masala",
+    "description": "Okra cooked in spicy gravy",
+    "price": 100,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/bhendi-masala_vm0ccp.jpg",
+    "preparationTime": 18
+  },
+  {
+    "category": "Main Course",
+    "name": "Matki Masala",
+    "description": "Moth beans in spicy curry",
+    "price": 100,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/matki-masala_gv5e1q.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Jaipuri",
+    "description": "Vegetables in Rajasthani style gravy",
+    "price": 130,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-jaipuri_oumb6n.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Maharaja",
+    "description": "Royal mixed vegetables in rich gravy",
+    "price": 150,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-maharaja_cjptek.jpg",
+    "preparationTime": 22
+  },
+  {
+    "category": "Main Course",
+    "name": "Mix Veg",
+    "description": "Assorted vegetables in curry",
+    "price": 130,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/mix-veg_h3f7mq.jpg",
+    "preparationTime": 18
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Kolhapuri",
+    "description": "Spicy vegetables in Kolhapuri masala",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-kolhapuri_sgxwgc.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Hungama",
+    "description": "Mix vegetables in thick gravy",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-hungama_sbhpcd.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Toofani",
+    "description": "Spicy mixed vegetables curry",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-toofani_mrrsl1.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Harabhara",
+    "description": "Green vegetables in spinach gravy",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-harabhara_wtetfm.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Kofta",
+    "description": "Vegetable dumplings in rich gravy",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-kofta_obogkj.jpg",
+    "preparationTime": 22
+  },
+  {
+    "category": "Main Course",
+    "name": "Veg Kadai",
+    "description": "Mixed vegetables in kadai masala",
+    "price": 140,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/veg-kadai_v0v3on.jpg",
+    "preparationTime": 20
+  },
+  {
+    "category": "Main Course",
+    "name": "Soyabean Vadi",
+    "description": "Soya nuggets in spicy gravy",
+    "price": 130,
+    "isVeg": true,
+    "isAvailable": true,
+    "imageUrl": "https://res.cloudinary.com/dy5gnwaws/image/upload/v1773675212/soyabean-vadi_w3giwo.jpg",
+    "preparationTime": 20
+  }
+]

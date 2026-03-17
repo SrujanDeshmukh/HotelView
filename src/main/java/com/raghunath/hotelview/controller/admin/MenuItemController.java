@@ -19,13 +19,18 @@ public class MenuItemController {
     private final MenuItemService menuItemService;
 
     // Add product
+    // Add product
     @PostMapping("/add")
     public ApiResponse addMenuItem(@RequestBody MenuItemRequest request){
 
-        String message = menuItemService.addMenuItem(request);
+        // 1. Get the adminId from the token (the security context)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String adminId = auth.getName();
+
+        // 2. Pass both the request AND the adminId to your service
+        String message = menuItemService.addMenuItem(request, adminId);
 
         return new ApiResponse(message);
-
     }
 
     // all items of hotel
