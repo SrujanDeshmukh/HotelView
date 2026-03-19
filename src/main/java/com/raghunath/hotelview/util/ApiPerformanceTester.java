@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Profile("dev")
 public class ApiPerformanceTester implements CommandLineRunner {
 
-    private final boolean RUN_STRESS_TEST = true;
+    private final boolean RUN_STRESS_TEST = false;
     private final String URL = "https://hotelview.onrender.com/api/v1/menu/add";
 
     // PASTE YOUR TOKEN HERE
