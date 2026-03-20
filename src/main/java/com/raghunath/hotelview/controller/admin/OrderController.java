@@ -29,4 +29,12 @@ public class OrderController {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         return orderService.getDraft(hotelId, tableNumber);
     }
+
+    // Add to OrderController.java
+    @PostMapping("/confirm/{tableNumber}")
+    public ResponseEntity<String> confirmOrder(@PathVariable int tableNumber) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String message = orderService.confirmOrder(hotelId, tableNumber);
+        return ResponseEntity.ok(message);
+    }
 }

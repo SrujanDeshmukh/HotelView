@@ -2,6 +2,7 @@ package com.raghunath.hotelview.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -14,6 +15,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Document(collection = "menu_items")
+// PRODUCTION INDEX: Ensures hotelId + category lookups are instant
+@CompoundIndex(name = "hotel_category_idx", def = "{'hotelId': 1, 'category': 1}")
 public class MenuItem {
 
     @Id
@@ -22,7 +25,6 @@ public class MenuItem {
     @Indexed
     private String hotelId;
 
-    @Indexed
     private String category;
 
     private String name;
@@ -39,8 +41,7 @@ public class MenuItem {
 
     private Integer preparationTime;
 
-    private Boolean isApproved = false; // controlled by Madhava Global
+    private Boolean isApproved = false;
 
     private LocalDateTime createdAt;
-
 }
