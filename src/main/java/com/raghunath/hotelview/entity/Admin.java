@@ -29,4 +29,6 @@ public class Admin {
 
     private boolean active;
 
+    private int maxLogins = 1;
+
 }

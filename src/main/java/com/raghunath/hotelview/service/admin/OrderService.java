@@ -8,6 +8,7 @@ import com.raghunath.hotelview.repository.OrderDraftRepository;
 import com.raghunath.hotelview.repository.TableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,33 +54,44 @@ public class OrderService {
     }
 
     // 3. CONFIRM ORDER (KOT Logic: Moves Draft to Kitchen)
+    @Transactional // Ensures atomicity: Both save and delete happen, or neither does.
     public String confirmOrder(String hotelId, int tableNumber) {
-        // Find the active draft
         OrderDraft draft = draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber)
                 .orElseThrow(() -> new RuntimeException("No active draft found for Table " + tableNumber));
 
-        // Create the Kitchen Order Ticket (KOT)
         KitchenOrder kOrder = KitchenOrder.builder()
                 .hotelId(hotelId)
                 .tableNumber(tableNumber)
                 .items(draft.getItems())
                 .totalAmount(draft.getTotalAmount())
-                .status("PENDING") // Initial status for Chef
+                .status("PENDING")
                 .orderTime(LocalDateTime.now())
                 .build();
 
         kitchenOrderRepository.save(kOrder);
-
-        // Cleanup: Delete the draft so it doesn't show up as 'unsaved' anymore
         draftRepository.delete(draft);
 
-        // Update table to 'Order Received' status
         updateTableStatus(hotelId, tableNumber, "Order Received");
-
         return "Order sent to kitchen successfully!";
     }
 
-    // Helper method for status updates
+    // 4. NEW: CHEF UPDATE API (To move order through lifecycle)
+    public void updateOrderStatus(String orderId, String newStatus) {
+        kitchenOrderRepository.findById(orderId).ifPresent(order -> {
+            order.setStatus(newStatus);
+            kitchenOrderRepository.save(order);
+
+            // LOGIC: If order is COMPLETED, we might want to update the table status
+            if ("COMPLETED".equals(newStatus)) {
+                // Table remains 'Occupied' but waiter knows food is ready to be picked up
+                updateTableStatus(order.getHotelId(), order.getTableNumber(), "Food Ready");
+            }
+            if ("SERVED".equals(newStatus)) {
+                updateTableStatus(order.getHotelId(), order.getTableNumber(), "Occupied");
+            }
+        });
+    }
+
     private void updateTableStatus(String hotelId, int tableNumber, String status) {
         tableRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(t -> {
             t.setStatus(status);

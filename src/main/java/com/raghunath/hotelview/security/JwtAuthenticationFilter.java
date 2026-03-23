@@ -25,8 +25,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+                                    FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
@@ -34,29 +33,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
 
             if (jwtUtil.validateToken(token)) {
-                // This 'adminId' is now the unique Hotel ID from our optimized token
-                String hotelId = jwtUtil.extractAdminId(token);
+                // Extract the enterprise claims
+                String hotelId = jwtUtil.extractHotelId(token);
+                String role = jwtUtil.extractRole(token);
 
                 if (hotelId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                    // INDUSTRY STANDARD: Manually granting a role for stateless APIs
-                    // This prevents 403 errors on restricted endpoints.
+                    // Set the role dynamically (e.g., ROLE_ADMIN, ROLE_WAITER, ROLE_CHEF)
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    hotelId,
+                                    hotelId, // Principal is the Hotel ID for easy access in controllers
                                     null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
                             );
 
-                    // Link the request details to the authentication object
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    // Set the security context
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
         }
-
         filterChain.doFilter(request, response);
     }
 }
