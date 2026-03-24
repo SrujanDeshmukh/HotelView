@@ -7,4 +7,8 @@ import java.util.List;
 public interface KitchenOrderRepository extends MongoRepository<KitchenOrder, String> {
     // Used by the Chef to see what needs to be cooked
     List<KitchenOrder> findByHotelIdAndStatusIn(String hotelId, List<String> statuses);
+
+    List<KitchenOrder> findByHotelIdAndTableNumberAndStatusNotOrderByCreatedAtDesc(String hotelId, int tableNumber, String paid);
+
+    List<KitchenOrder> findByHotelIdAndStatus(String hotelId, String pending);
 }

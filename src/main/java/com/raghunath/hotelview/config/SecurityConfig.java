@@ -68,14 +68,14 @@ public class SecurityConfig {
                         // 2. Staff Management (Admin Only)
                         .requestMatchers("/api/v1/employees/register", "/api/v1/employees/list").hasRole("ADMIN")
 
-                        // 3. Kitchen Operations (Chef and Admin)
-                        .requestMatchers("/api/v1/orders/kitchen/**").hasAnyRole("CHEF", "ADMIN")
+                                // 3. Kitchen Operations: Waiters can VIEW, but only CHEF/ADMIN can UPDATE
+                                .requestMatchers(HttpMethod.GET, "/api/v1/orders/kitchen/**").hasAnyRole("WAITER", "CHEF", "ADMIN")
+                                .requestMatchers(HttpMethod.PATCH, "/api/v1/orders/kitchen/**").hasAnyRole("CHEF", "ADMIN")
 
-                        // 4. Order & Table Operations (Waiter and Admin)
-                        .requestMatchers("/api/v1/orders/draft/**", "/api/v1/orders/confirm/**").hasAnyRole("WAITER", "ADMIN")
-                        .requestMatchers("/api/v1/tables/**").hasAnyRole("WAITER", "ADMIN")
+// 4. Order Operations: Waiters and Admins
+                                .requestMatchers("/api/v1/orders/draft/**", "/api/v1/orders/confirm/**", "/api/v1/orders/table/**").hasAnyRole("WAITER", "ADMIN")
 
-                        // 5. Logout (Requires valid Access Token to identify WHO is logging out)
+                                // 5. Logout (Requires valid Access Token to identify WHO is logging out)
                         .requestMatchers("/api/v1/admin/logout", "/api/v1/employees/logout").authenticated()
 
                         // 6. Menu Operations

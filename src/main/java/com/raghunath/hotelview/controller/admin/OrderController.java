@@ -5,6 +5,7 @@ import com.raghunath.hotelview.entity.KitchenOrder;
 import com.raghunath.hotelview.entity.OrderDraft;
 import com.raghunath.hotelview.repository.KitchenOrderRepository;
 import com.raghunath.hotelview.service.admin.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +19,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderService orderService;
-    private KitchenOrderRepository kitchenOrderRepository;
+    private final KitchenOrderRepository kitchenOrderRepository;
+
+    private String getAuthenticatedUserId() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
 
     @PostMapping("/draft/{tableNumber}")
-    public ResponseEntity<String> saveOrderDraft(@PathVariable int tableNumber, @RequestBody List<OrderItem> items){
+    public ResponseEntity<String> saveOrderDraft(@PathVariable int tableNumber, @Valid @RequestBody List<OrderItem> items){
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         orderService.saveDraft(hotelId, tableNumber, items);
         return ResponseEntity.ok("Draft saved successfully");
@@ -34,32 +39,56 @@ public class OrderController {
     }
 
     // 1. PLACE ORDER (Waiter/Admin clicks 'Confirm')
+    // 1. PLACE ORDER (Updated to accept current items from UI)
     @PostMapping("/confirm/{tableNumber}")
-    public ResponseEntity<String> confirmOrder(@PathVariable int tableNumber) {
+    public ResponseEntity<String> confirmOrder(@PathVariable int tableNumber, @Valid @RequestBody List<OrderItem> items) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String message = orderService.confirmOrder(hotelId, tableNumber);
-        return ResponseEntity.ok(message);
+        String waiterId = getAuthenticatedUserId();
+
+        return ResponseEntity.ok(orderService.confirmOrder(hotelId, tableNumber, items, waiterId));
     }
 
-    // 2. KITCHEN FEED (Chef/Admin sees what to cook)
-    @GetMapping("/kitchen/live")
-    public ResponseEntity<List<KitchenOrder>> getLiveOrders() {
+    // 4. FETCH SPECIFIC TABLE ORDERS (Latest First)
+    @GetMapping("/table/{tableNumber}")
+    public ResponseEntity<List<KitchenOrder>> getTableOrders(@PathVariable int tableNumber) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        // Standard: Fetch PENDING (New) and PREPARING (Accepted)
-        List<KitchenOrder> orders = kitchenOrderRepository.findByHotelIdAndStatusIn(
-                hotelId, List.of("PENDING", "PREPARING"));
-        return ResponseEntity.ok(orders);
+        // Fetches all orders for this table that are not yet PAID, newest at top
+        return ResponseEntity.ok(orderService.getOrdersByTable(hotelId, tableNumber));
     }
 
-    // 3. STATUS UPDATE (Chef marks as 'PREPARING' or 'COMPLETED')
-    @PatchMapping("/kitchen/status/{orderId}")
-    public ResponseEntity<String> updateStatus(@PathVariable String orderId, @RequestParam String status) {
-        // Validation: Only allow specific transitions for 1-lakh user stability
-        if (!List.of("PREPARING", "COMPLETED", "SERVED").contains(status.toUpperCase())) {
-            return ResponseEntity.badRequest().body("Invalid Status");
-        }
+    // 5. CHEF: FETCH PENDING ORDERS (New orders only)
+    @GetMapping("/kitchen/pending")
+    public ResponseEntity<List<KitchenOrder>> getPendingOrders() {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(kitchenOrderRepository.findByHotelIdAndStatus(hotelId, "PENDING"));
+    }
 
-        orderService.updateOrderStatus(orderId, status.toUpperCase());
-        return ResponseEntity.ok("Order " + orderId + " is now " + status);
+    // 6. CHEF: ACCEPT ORDER (Change PENDING -> PREPARING)
+    @PatchMapping("/kitchen/accept/{orderId}")
+    public ResponseEntity<String> acceptOrder(@PathVariable String orderId) {
+        String chefId = getAuthenticatedUserId();
+        orderService.updateStatusWithChef(orderId, "PREPARING", chefId);
+        return ResponseEntity.ok("Accepted by " + chefId);
+    }
+
+    // 7. CHEF: FETCH PREPARING ORDERS (Orders currently being cooked)
+    @GetMapping("/kitchen/preparing")
+    public ResponseEntity<List<KitchenOrder>> getPreparingOrders() {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(kitchenOrderRepository.findByHotelIdAndStatus(hotelId, "PREPARING"));
+    }
+
+    // 8. CHEF: COMPLETE ORDER (Change PREPARING -> COMPLETED)
+    @PatchMapping("/kitchen/complete/{orderId}")
+    public ResponseEntity<String> completeOrder(@PathVariable String orderId) {
+        orderService.updateOrderStatus(orderId, "COMPLETED");
+        return ResponseEntity.ok("Order marked as COMPLETED");
+    }
+
+    // 9. FETCH COMPLETED ORDERS (Ready to be served)
+    @GetMapping("/kitchen/completed")
+    public ResponseEntity<List<KitchenOrder>> getCompletedOrders() {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(kitchenOrderRepository.findByHotelIdAndStatus(hotelId, "COMPLETED"));
     }
 }

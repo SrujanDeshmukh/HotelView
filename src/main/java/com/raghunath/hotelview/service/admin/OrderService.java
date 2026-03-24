@@ -7,12 +7,14 @@ import com.raghunath.hotelview.repository.KitchenOrderRepository;
 import com.raghunath.hotelview.repository.OrderDraftRepository;
 import com.raghunath.hotelview.repository.TableRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -21,8 +23,12 @@ public class OrderService {
     private final TableRepository tableRepository;
     private final KitchenOrderRepository kitchenOrderRepository;
 
-    // 1. SAVE DRAFT (When Admin/Waiter adds items but hasn't confirmed yet)
+    /**
+     * 1. SAVE DRAFT: Waiter/Admin adds items.
+     * Since the waiter has full access, this updates the live table total immediately.
+     */
     public void saveDraft(String hotelId, int tableNumber, List<OrderItem> items) {
+        validateTableExists(hotelId, tableNumber);
         Double total = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
 
         OrderDraft draft = draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber)
@@ -34,65 +40,102 @@ public class OrderService {
         draft.setItems(items);
         draft.setTotalAmount(total);
         draft.setUpdatedAt(LocalDateTime.now());
-
         draftRepository.save(draft);
-
-        // Update Table Status to 'Occupied' if it was Vacant
-        tableRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(table -> {
-            if ("Vacant".equals(table.getStatus())) {
-                table.setStatus("Occupied");
-            }
-            table.setCurrentBill(total);
-            tableRepository.save(table);
-        });
     }
 
-    // 2. FETCH DRAFT (When Waiter returns to a specific table)
+    private void validateTableExists(String hotelId, int tableNumber) {
+        // Check if a table with this number exists for this specific hotel
+        boolean exists = tableRepository.existsByHotelIdAndTableNumber(hotelId, tableNumber);
+
+        if (!exists) {
+            log.error("VALIDATION_FAILED: Table {} does not exist for Hotel {}", tableNumber, hotelId);
+            throw new RuntimeException("Invalid Table Number: " + tableNumber);
+        }
+    }
+
+    /**
+     * 2. FETCH DRAFT: View current unsent items.
+     */
     public OrderDraft getDraft(String hotelId, int tableNumber) {
-        return draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber)
-                .orElse(null);
+        return draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).orElse(null);
     }
 
-    // 3. CONFIRM ORDER (KOT Logic: Moves Draft to Kitchen)
-    @Transactional // Ensures atomicity: Both save and delete happen, or neither does.
-    public String confirmOrder(String hotelId, int tableNumber) {
-        OrderDraft draft = draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber)
-                .orElseThrow(() -> new RuntimeException("No active draft found for Table " + tableNumber));
+    /**
+     * 3. CONFIRM ORDER: Moves items to the Kitchen.
+     * Table status becomes 'PENDING' to alert the Chef.
+     */
+    @Transactional
+    public String confirmOrder(String hotelId, int tableNumber, List<OrderItem> items, String waiterId) {
+        validateTableExists(hotelId, tableNumber);
+        log.info("CONFIRM_ORDER: Hotel: {}, Table: {}, Waiter: {}, Items: {}",
+                hotelId, tableNumber, waiterId, items.size());
+        Double total = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
 
         KitchenOrder kOrder = KitchenOrder.builder()
                 .hotelId(hotelId)
                 .tableNumber(tableNumber)
-                .items(draft.getItems())
-                .totalAmount(draft.getTotalAmount())
+                .items(items)
+                .totalAmount(total)
                 .status("PENDING")
-                .orderTime(LocalDateTime.now())
+                .createdBy(waiterId) // Audit Trail
+                .createdAt(LocalDateTime.now())
                 .build();
 
         kitchenOrderRepository.save(kOrder);
-        draftRepository.delete(draft);
+        draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber)
+                .ifPresent(draftRepository::delete);
 
-        updateTableStatus(hotelId, tableNumber, "Order Received");
-        return "Order sent to kitchen successfully!";
+        updateTableVisualStatus(hotelId, tableNumber, "PENDING");
+        log.info("ORDER_SUCCESS: Table {} is now PENDING", tableNumber);
+        return "Order sent to kitchen";
+
+    }
+    /**
+     * 4. FETCH TABLE ORDERS: Latest orders first.
+     */
+    public List<KitchenOrder> getOrdersByTable(String hotelId, int tableNumber) {
+        return kitchenOrderRepository.findByHotelIdAndTableNumberAndStatusNotOrderByCreatedAtDesc(
+                hotelId, tableNumber, "PAID");
     }
 
-    // 4. NEW: CHEF UPDATE API (To move order through lifecycle)
+    /**
+     * 5. UPDATE STATUS WITH CHEF: Handles Kitchen Lifecycle.
+     * PREPARING -> Table shows 'PREPARING'
+     * COMPLETED -> Table shows 'ACTIVE' (Food is served/Guest eating)
+     */
+    public void updateStatusWithChef(String orderId, String newStatus, String userId) {
+        KitchenOrder order = kitchenOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // If the order is already COMPLETED, don't allow PREPARING (Safety Check)
+        if ("COMPLETED".equals(order.getStatus()) && "PREPARING".equals(newStatus)) {
+            throw new RuntimeException("Cannot move completed order back to preparing");
+        }
+
+        order.setStatus(newStatus.toUpperCase());
+
+        if ("PREPARING".equalsIgnoreCase(newStatus)) {
+            order.setAcceptedBy(userId); // Audit Trail: Who is cooking?
+        }
+
+        kitchenOrderRepository.save(order);
+
+        // Map Table Visuals
+        String tableUIStatus = "COMPLETED".equalsIgnoreCase(newStatus) ? "ACTIVE" : newStatus.toUpperCase();
+        updateTableVisualStatus(order.getHotelId(), order.getTableNumber(), tableUIStatus);
+    }
+
+    /**
+     * 6. GENERAL STATUS UPDATE: Fallback for direct status changes.
+     */
     public void updateOrderStatus(String orderId, String newStatus) {
-        kitchenOrderRepository.findById(orderId).ifPresent(order -> {
-            order.setStatus(newStatus);
-            kitchenOrderRepository.save(order);
-
-            // LOGIC: If order is COMPLETED, we might want to update the table status
-            if ("COMPLETED".equals(newStatus)) {
-                // Table remains 'Occupied' but waiter knows food is ready to be picked up
-                updateTableStatus(order.getHotelId(), order.getTableNumber(), "Food Ready");
-            }
-            if ("SERVED".equals(newStatus)) {
-                updateTableStatus(order.getHotelId(), order.getTableNumber(), "Occupied");
-            }
-        });
+        updateStatusWithChef(orderId, newStatus, null);
     }
 
-    private void updateTableStatus(String hotelId, int tableNumber, String status) {
+    /**
+     * HELPER: Syncs the physical Table entity with the digital order status.
+     */
+    private void updateTableVisualStatus(String hotelId, int tableNumber, String status) {
         tableRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(t -> {
             t.setStatus(status);
             tableRepository.save(t);
