@@ -14,14 +14,24 @@ import java.util.List;
 public class KitchenOrder {
     @Id
     private String id;
-    private String hotelId; // INDEX REQUIRED
-    private int tableNumber; // INDEX REQUIRED
+
+    @org.springframework.data.mongodb.core.mapping.Field("hotelId")
+    private String hotelId;
+
+    @org.springframework.data.mongodb.core.mapping.Field("tableNumber")
+    private Integer tableNumber; // Integer allows NULL for Home Delivery
+
+    @org.springframework.data.mongodb.core.mapping.Field("orderType")
+    private String orderType;
+
     private List<OrderItem> items;
     private Double totalAmount;
-    private String status; // "PENDING", "PREPARING", "COMPLETED", "PAID"
+    private String status;
 
-    private String createdBy; // Waiter/Admin ID
-    private String acceptedBy; // Chef/Admin ID
+    private String createdBy;
+    private String acceptedBy;
 
     private LocalDateTime createdAt;
+    private String createdDate;
+    private String createdTime;
 }

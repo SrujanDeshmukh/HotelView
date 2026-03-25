@@ -40,12 +40,22 @@ public class OrderController {
 
     // 1. PLACE ORDER (Waiter/Admin clicks 'Confirm')
     // 1. PLACE ORDER (Updated to accept current items from UI)
+    // 1. PLACE TABLE ORDER
     @PostMapping("/confirm/{tableNumber}")
     public ResponseEntity<String> confirmOrder(@PathVariable int tableNumber, @Valid @RequestBody List<OrderItem> items) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         String waiterId = getAuthenticatedUserId();
-
         return ResponseEntity.ok(orderService.confirmOrder(hotelId, tableNumber, items, waiterId));
+    }
+
+    // 2. PLACE HOME DELIVERY ORDER
+    @PostMapping("/confirm/delivery")
+    public ResponseEntity<String> confirmHomeDelivery(@Valid @RequestBody List<OrderItem> items) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String waiterId = getAuthenticatedUserId();
+
+        String orderId = orderService.confirmHomeDelivery(hotelId, items, waiterId);
+        return ResponseEntity.ok("Home delivery order sent to kitchen. ID: " + orderId);
     }
 
     // 4. FETCH SPECIFIC TABLE ORDERS (Latest First)

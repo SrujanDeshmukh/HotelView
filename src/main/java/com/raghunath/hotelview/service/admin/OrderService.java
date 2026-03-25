@@ -10,6 +10,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +29,7 @@ public class OrderService {
     private final OrderDraftRepository draftRepository;
     private final TableRepository tableRepository;
     private final KitchenOrderRepository kitchenOrderRepository;
-
+    private final MongoTemplate mongoTemplate;
     /**
      * 1. SAVE DRAFT: Waiter/Admin adds items.
      * Since the waiter has full access, this updates the live table total immediately.
@@ -43,12 +50,13 @@ public class OrderService {
         draftRepository.save(draft);
     }
 
-    private void validateTableExists(String hotelId, int tableNumber) {
-        // Check if a table with this number exists for this specific hotel
-        boolean exists = tableRepository.existsByHotelIdAndTableNumber(hotelId, tableNumber);
+    private ZonedDateTime getISTNow() {
+        return ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+    }
 
-        if (!exists) {
-            log.error("VALIDATION_FAILED: Table {} does not exist for Hotel {}", tableNumber, hotelId);
+    private void validateTableExists(String hotelId, int tableNumber) {
+        if (!tableRepository.existsByHotelIdAndTableNumber(hotelId, tableNumber)) {
+            log.error("VALIDATION_FAILED: Table {} not found for Hotel {}", tableNumber, hotelId);
             throw new RuntimeException("Invalid Table Number: " + tableNumber);
         }
     }
@@ -67,28 +75,50 @@ public class OrderService {
     @Transactional
     public String confirmOrder(String hotelId, int tableNumber, List<OrderItem> items, String waiterId) {
         validateTableExists(hotelId, tableNumber);
-        log.info("CONFIRM_ORDER: Hotel: {}, Table: {}, Waiter: {}, Items: {}",
-                hotelId, tableNumber, waiterId, items.size());
+        ZonedDateTime nowIST = getISTNow();
         Double total = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
 
         KitchenOrder kOrder = KitchenOrder.builder()
                 .hotelId(hotelId)
                 .tableNumber(tableNumber)
+                .orderType("TABLE")
                 .items(items)
                 .totalAmount(total)
                 .status("PENDING")
-                .createdBy(waiterId) // Audit Trail
-                .createdAt(LocalDateTime.now())
+                .createdBy(waiterId)
+                .createdAt(nowIST.toLocalDateTime())
+                .createdDate(nowIST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .createdTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
                 .build();
 
         kitchenOrderRepository.save(kOrder);
-        draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber)
-                .ifPresent(draftRepository::delete);
+        draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(draftRepository::delete);
 
+        // Use the helper only for TABLE orders
         updateTableVisualStatus(hotelId, tableNumber, "PENDING");
-        log.info("ORDER_SUCCESS: Table {} is now PENDING", tableNumber);
-        return "Order sent to kitchen";
+        return "Table order sent to kitchen";
+    }
 
+
+    @Transactional
+    public String confirmHomeDelivery(String hotelId, List<OrderItem> items, String waiterId) {
+        ZonedDateTime nowIST = getISTNow();
+        Double total = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
+
+        KitchenOrder deliveryOrder = KitchenOrder.builder()
+                .hotelId(hotelId)
+                .tableNumber(null) // Keep null for delivery
+                .orderType("HOME_DELIVERY")
+                .items(items)
+                .totalAmount(total)
+                .status("PENDING")
+                .createdBy(waiterId)
+                .createdAt(nowIST.toLocalDateTime())
+                .createdDate(nowIST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .createdTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
+                .build();
+
+        return kitchenOrderRepository.save(deliveryOrder).getId();
     }
     /**
      * 4. FETCH TABLE ORDERS: Latest orders first.
@@ -107,22 +137,23 @@ public class OrderService {
         KitchenOrder order = kitchenOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // If the order is already COMPLETED, don't allow PREPARING (Safety Check)
-        if ("COMPLETED".equals(order.getStatus()) && "PREPARING".equals(newStatus)) {
-            throw new RuntimeException("Cannot move completed order back to preparing");
-        }
-
-        order.setStatus(newStatus.toUpperCase());
+        // PARTIAL UPDATE: Only touch status and auditor.
+        // This PREVENTS the orderType/Dates from disappearing.
+        Query query = new Query(Criteria.where("id").is(orderId));
+        Update update = new Update();
+        update.set("status", newStatus.toUpperCase());
 
         if ("PREPARING".equalsIgnoreCase(newStatus)) {
-            order.setAcceptedBy(userId); // Audit Trail: Who is cooking?
+            update.set("acceptedBy", userId);
         }
 
-        kitchenOrderRepository.save(order);
+        mongoTemplate.updateFirst(query, update, KitchenOrder.class);
 
-        // Map Table Visuals
-        String tableUIStatus = "COMPLETED".equalsIgnoreCase(newStatus) ? "ACTIVE" : newStatus.toUpperCase();
-        updateTableVisualStatus(order.getHotelId(), order.getTableNumber(), tableUIStatus);
+        // Guard: Only update UI if it's a table order
+        if ("TABLE".equalsIgnoreCase(order.getOrderType()) && order.getTableNumber() != null) {
+            String tableUIStatus = "COMPLETED".equalsIgnoreCase(newStatus) ? "ACTIVE" : newStatus.toUpperCase();
+            updateTableVisualStatus(order.getHotelId(), order.getTableNumber(), tableUIStatus);
+        }
     }
 
     /**
@@ -135,7 +166,9 @@ public class OrderService {
     /**
      * HELPER: Syncs the physical Table entity with the digital order status.
      */
-    private void updateTableVisualStatus(String hotelId, int tableNumber, String status) {
+    private void updateTableVisualStatus(String hotelId, Integer tableNumber, String status) {
+        if (tableNumber == null) return; // Never update table UI for delivery
+
         tableRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(t -> {
             t.setStatus(status);
             tableRepository.save(t);
