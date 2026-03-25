@@ -10,9 +10,9 @@ public class RestaurantTable {
     @Id
     private String id;
     private String hotelId;
-    private int tableNumber;
+
+    private Integer tableNumber; // 👈 Change from 'int' to 'Integer'
     private int capacity;
     private String status;
     private Double currentBill;
-
 }

@@ -137,8 +137,9 @@ public class OrderService {
         KitchenOrder order = kitchenOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // PARTIAL UPDATE: Only touch status and auditor.
-        // This PREVENTS the orderType/Dates from disappearing.
+        // Debug log to see what Java sees before the update
+        log.info("Updating Order: ID={}, Type={}, Table={}", order.getId(), order.getOrderType(), order.getTableNumber());
+
         Query query = new Query(Criteria.where("id").is(orderId));
         Update update = new Update();
         update.set("status", newStatus.toUpperCase());
@@ -149,13 +150,17 @@ public class OrderService {
 
         mongoTemplate.updateFirst(query, update, KitchenOrder.class);
 
-        // Guard: Only update UI if it's a table order
-        if ("TABLE".equalsIgnoreCase(order.getOrderType()) && order.getTableNumber() != null) {
+        // STRICT GUARD: Only enter if it is explicitly a TABLE order and tableNumber is NOT null and NOT 0
+        if ("TABLE".equalsIgnoreCase(order.getOrderType()) &&
+                order.getTableNumber() != null &&
+                order.getTableNumber() > 0) {
+
             String tableUIStatus = "COMPLETED".equalsIgnoreCase(newStatus) ? "ACTIVE" : newStatus.toUpperCase();
             updateTableVisualStatus(order.getHotelId(), order.getTableNumber(), tableUIStatus);
+        } else {
+            log.info("SKIPPING_UI_UPDATE: Home Delivery or Invalid Table Number detected.");
         }
     }
-
     /**
      * 6. GENERAL STATUS UPDATE: Fallback for direct status changes.
      */
