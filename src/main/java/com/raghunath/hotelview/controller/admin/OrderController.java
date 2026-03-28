@@ -2,6 +2,7 @@ package com.raghunath.hotelview.controller.admin;
 
 import com.raghunath.hotelview.dto.admin.CheckoutRequest;
 import com.raghunath.hotelview.dto.admin.OrderItem;
+import com.raghunath.hotelview.entity.CompletedOrder;
 import com.raghunath.hotelview.entity.KitchenOrder;
 import com.raghunath.hotelview.entity.OrderDraft;
 import com.raghunath.hotelview.repository.KitchenOrderRepository;
@@ -9,6 +10,7 @@ import com.raghunath.hotelview.service.admin.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;

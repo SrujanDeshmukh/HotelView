@@ -1,5 +1,6 @@
 package com.raghunath.hotelview.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude; // 👈 Add this import
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -9,11 +10,12 @@ import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Document(collection = "completed_orders")
+@JsonInclude(JsonInclude.Include.NON_NULL) // 👈 Add this to hide null fields from JSON
 public class CompletedOrder {
     @Id
     private String id;
     private String hotelId;
-    private String orderType;
+    private String orderType; // 👈 This will now show up in the list
 
     private String customerName;
     private String customerMobile;

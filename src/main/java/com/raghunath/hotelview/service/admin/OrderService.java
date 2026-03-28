@@ -11,6 +11,10 @@ import com.raghunath.hotelview.repository.OrderDraftRepository;
 import com.raghunath.hotelview.repository.TableRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.ZoneId;
@@ -174,27 +178,21 @@ public class OrderService {
 
     @Transactional
     public String checkoutOrders(String hotelId, CheckoutRequest request) {
-        // 1. Fetch all documents for the provided IDs
+        // 1. Fetch active orders
         List<KitchenOrder> activeOrders = kitchenOrderRepository.findAllById(request.getOrderIds());
-
         if (activeOrders.isEmpty()) throw new RuntimeException("No orders found to checkout");
 
-        // 2. Calculate Grand Total
-        Double grandTotal = activeOrders.stream()
-                .mapToDouble(KitchenOrder::getTotalAmount)
-                .sum();
-
-        // 3. Prepare IST Time
+        Double grandTotal = activeOrders.stream().mapToDouble(KitchenOrder::getTotalAmount).sum();
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-        // 4. Create the Archive Document
+        // 2. Build the Archive Document
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
-                .orderType(activeOrders.get(0).getOrderType()) // Detects TABLE or DELIVERY
+                .orderType(activeOrders.get(0).getOrderType())
                 .customerName(request.getCustomerName())
                 .customerMobile(request.getCustomerMobile())
                 .customerAddress(request.getCustomerAddress())
-                .allOrders(activeOrders) // 👈 Nests the full documents
+                .allOrders(activeOrders) // Full nesting
                 .grandTotal(grandTotal)
                 .paymentStatus("PAID")
                 .checkoutAt(nowIST.toLocalDateTime())
@@ -202,18 +200,37 @@ public class OrderService {
                 .checkoutTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
                 .build();
 
-        // 5. Save to NEW collection
-        completeOrderRepository.save(finalBill);
+        // 3. Save to completed collection
+        CompletedOrder savedBill = completeOrderRepository.save(finalBill);
 
-        // 6. DELETE from Active Kitchen collection (Clean up)
-        kitchenOrderRepository.deleteAll(activeOrders);
+        // 4. ATOMIC CLEANUP: Only if save was successful
+        if (savedBill.getId() != null) {
+            kitchenOrderRepository.deleteAll(activeOrders);
 
-        // 7. Reset Table status if it was a table order
-        if (activeOrders.get(0).getTableNumber() != null) {
-            updateTableVisualStatus(hotelId, activeOrders.get(0).getTableNumber(), "AVAILABLE");
+            // Reset table status if applicable
+            if (activeOrders.get(0).getTableNumber() != null) {
+                updateTableVisualStatus(hotelId, activeOrders.get(0).getTableNumber(), "AVAILABLE");
+            }
         }
 
-        return "Checkout complete. Bill ID: " + finalBill.getId();
+        return "Success";
+    }
+
+    // --- API 1: Paged Fetch (5 at a time) ---
+    public Page<CompletedOrder> getCompletedOrdersPaged(String hotelId, int pageNumber) {
+        Pageable pageable = PageRequest.of(pageNumber, 5, Sort.by("checkoutAt").descending());
+        return completeOrderRepository.findByHotelId(hotelId, pageable);
+    }
+
+    // --- API 2: Full Detail by ID ---
+    public CompletedOrder getCompletedOrderDetails(String id) {
+        return completeOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order history not found for ID: " + id));
+    }
+
+    // --- API 3: Search by Name or Mobile ---
+    public List<CompletedOrder> searchCompletedOrders(String hotelId, String query) {
+        return completeOrderRepository.searchOrders(hotelId, query);
     }
     /**
      * HELPER: Syncs the physical Table entity with the digital order status.
