@@ -101,6 +101,7 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "https://hotelview-tau.vercel.app",
                 "http://localhost",
+                "https://localhost",
                 "capacitor://localhost"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
