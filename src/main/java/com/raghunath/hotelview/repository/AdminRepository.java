@@ -9,4 +9,5 @@ public interface AdminRepository extends MongoRepository<Admin, String> {
 
     Optional<Admin> findByMobile(String mobile);
 
+    Optional<Object> findByHotelId(String hotelIdFromToken);
 }

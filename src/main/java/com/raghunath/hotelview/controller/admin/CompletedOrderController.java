@@ -1,5 +1,6 @@
 package com.raghunath.hotelview.controller.admin;
 
+import com.raghunath.hotelview.dto.admin.ReceiptResponse;
 import com.raghunath.hotelview.entity.CompletedOrder;
 import com.raghunath.hotelview.service.admin.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,12 @@ public class CompletedOrderController {
      * Fetches everything (including items array) for a specific ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<CompletedOrder> getOrderDetails(@PathVariable String id) {
-        return ResponseEntity.ok(orderService.getCompletedOrderDetails(id));
+    public ResponseEntity<ReceiptResponse> getOrderDetails(@PathVariable String id) {
+        // Fetch hotelId from the Access Token (Security Context)
+        String hotelId = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        return ResponseEntity.ok(orderService.getReceiptDetails(id, hotelId));
     }
 
     /**
@@ -46,4 +51,5 @@ public class CompletedOrderController {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(orderService.searchCompletedOrders(hotelId, query));
     }
+
 }

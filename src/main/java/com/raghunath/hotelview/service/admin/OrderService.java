@@ -1,14 +1,13 @@
 package com.raghunath.hotelview.service.admin;
 
 import com.raghunath.hotelview.dto.admin.CheckoutRequest;
+import com.raghunath.hotelview.dto.admin.ReceiptResponse;
 import com.raghunath.hotelview.dto.admin.OrderItem;
+import com.raghunath.hotelview.entity.Admin;
 import com.raghunath.hotelview.entity.CompletedOrder;
 import com.raghunath.hotelview.entity.KitchenOrder;
 import com.raghunath.hotelview.entity.OrderDraft;
-import com.raghunath.hotelview.repository.CompleteOrderRepository;
-import com.raghunath.hotelview.repository.KitchenOrderRepository;
-import com.raghunath.hotelview.repository.OrderDraftRepository;
-import com.raghunath.hotelview.repository.TableRepository;
+import com.raghunath.hotelview.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -27,6 +26,7 @@ import org.springframework.data.mongodb.core.query.Update;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -34,6 +34,7 @@ import java.util.List;
 public class OrderService {
 
     private final OrderDraftRepository draftRepository;
+    private final AdminRepository adminRepository;
     private final TableRepository tableRepository;
     private final KitchenOrderRepository kitchenOrderRepository;
     private final MongoTemplate mongoTemplate;
@@ -232,6 +233,48 @@ public class OrderService {
     public List<CompletedOrder> searchCompletedOrders(String hotelId, String query) {
         return completeOrderRepository.searchOrders(hotelId, query);
     }
+
+    public ReceiptResponse getReceiptDetails(String orderId, String hotelIdFromToken) {
+        // 1. Fetch the Completed Order
+        CompletedOrder order = completeOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // Security Check: Ensure this order belongs to the hotel in the token
+        if (!order.getHotelId().equals(hotelIdFromToken)) {
+            throw new RuntimeException("Unauthorized access to this order");
+        }
+
+        // 2. Fetch Restaurant Details from Admin Entity
+        Admin admin = (Admin) adminRepository.findByHotelId(hotelIdFromToken)
+                .orElseThrow(() -> new RuntimeException("Restaurant profile not found"));
+
+        // 3. Flatten all nested items from allOrders array into one list for the receipt
+        List<ReceiptResponse.FlattenedItem> flattenedItems = order.getAllOrders().stream()
+                .flatMap(kitchenOrder -> kitchenOrder.getItems().stream())
+                .map(item -> ReceiptResponse.FlattenedItem.builder()
+                        .itemName(item.getItemName())
+                        .quantity(item.getQuantity())
+                        .price(item.getPrice())
+                        .subTotal(item.getSubTotal())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 4. Build the final Print-Ready response
+        return ReceiptResponse.builder()
+                .restaurantName(admin.getRestaurantName())
+                .restaurantAddress(admin.getRestaurantAddress())
+                .restaurantContact(admin.getRestaurantContact())
+                .orderId(order.getId())
+                .date(order.getCheckoutDate())
+                .time(order.getCheckoutTime())
+                .orderType(order.getOrderType())
+                .items(flattenedItems)
+                .grandTotal(order.getGrandTotal())
+                .customerName(order.getCustomerName())
+                .customerMobile(order.getCustomerMobile())
+                .customerAddress(order.getCustomerAddress())
+                .build();
+    }
     /**
      * HELPER: Syncs the physical Table entity with the digital order status.
      */
@@ -243,4 +286,5 @@ public class OrderService {
             tableRepository.save(t);
         });
     }
+
 }

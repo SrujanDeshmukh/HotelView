@@ -18,7 +18,7 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
-    private final long ACCESS_TOKEN_VALIDITY = 1000 * 60 * 60; // 1 hour for standard use
+    private final long ACCESS_TOKEN_VALIDITY = 1000 * 60; // 1 hour for standard use
     private final long REFRESH_TOKEN_VALIDITY = 1000 * 60 * 60 * 24 * 7; // 7 days
 
     private Key getSigningKey() {

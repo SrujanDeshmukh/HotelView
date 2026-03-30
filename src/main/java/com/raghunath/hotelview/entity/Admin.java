@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+@Data
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,5 +31,9 @@ public class Admin {
     private boolean active;
 
     private int maxLogins = 1;
+
+    private String restaurantName;
+    private String restaurantAddress;
+    private String restaurantContact;
 
 }
