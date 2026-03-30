@@ -21,4 +21,5 @@ public class EmployeeRefreshToken {
     @Indexed(unique = true)
     private String token;    // The actual JWT
     private LocalDateTime expiryDate;
+    private Long version;
 }

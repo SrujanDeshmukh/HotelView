@@ -1,5 +1,7 @@
 package com.raghunath.hotelview.security;
 
+import com.raghunath.hotelview.entity.AdminRefreshToken;
+import com.raghunath.hotelview.repository.AdminRefreshTokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -21,6 +22,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final AdminRefreshTokenRepository tokenRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -30,25 +32,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+            String token = authHeader.substring(7).trim();
 
             if (jwtUtil.validateToken(token)) {
-                // Extract the enterprise claims
                 String hotelId = jwtUtil.extractHotelId(token);
-                String role = jwtUtil.extractRole(token);
+                Long versionInJwt = jwtUtil.extractVersion(token);
 
-                if (hotelId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                // 1. Fetch ALL active sessions for this hotel (Returns a List)
+                // This prevents the 'NonUniqueResultException' crash during multiple logins
+                List<AdminRefreshToken> activeSessions = tokenRepository.findByUserId(hotelId);
 
-                    // Set the role dynamically (e.g., ROLE_ADMIN, ROLE_WAITER, ROLE_CHEF)
+                // 2. Check if the version in the JWT matches ANY of the active sessions in DB
+                boolean isVersionValid = activeSessions.stream()
+                        .anyMatch(session -> session.getVersion() != null &&
+                                session.getVersion().equals(versionInJwt));
+
+                if (isVersionValid) {
+                    String role = jwtUtil.extractRole(token);
+
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    hotelId, // Principal is the Hotel ID for easy access in controllers
+                                    hotelId,
                                     null,
                                     List.of(new SimpleGrantedAuthority("ROLE_" + role))
                             );
 
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    // This specific session version is old/superseded by a refresh on THIS device
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"SESSION_INVALID\", \"message\": \"Session superseded. Please use latest token.\"}");
+                    return;
                 }
             }
         }

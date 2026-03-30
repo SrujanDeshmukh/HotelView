@@ -48,16 +48,20 @@ public class EmployeeService {
             // --- STRICT BLOCK LOGIC ---
             long activeSessions = employeeRefreshTokenRepository.countByUserId(emp.getId());
             if (activeSessions >= emp.getMaxLogins()) {
-                throw new RuntimeException("Login limit reached (" + emp.getMaxLogins() +
-                        "). Please logout from another device first.");
+                throw new RuntimeException("Login limit reached (" + emp.getMaxLogins() + "). Logout elsewhere.");
             }
 
-            String accessToken = jwtUtil.generateAccessToken(emp.getId(), emp.getHotelId(), emp.getRole());
-            String refreshToken = jwtUtil.generateRefreshToken(emp.getId(), emp.getHotelId(), emp.getRole());
+            // 1. Initialize Version (Start at 1 or use existing if you prefer)
+            Long initialVersion = 1L;
+
+            // 2. Pass the 4th argument (version) to fix the error
+            String accessToken = jwtUtil.generateAccessToken(emp.getId(), emp.getHotelId(), emp.getRole(), initialVersion);
+            String refreshToken = jwtUtil.generateRefreshToken(emp.getId(), emp.getHotelId(), emp.getRole(), initialVersion);
 
             EmployeeRefreshToken et = EmployeeRefreshToken.builder()
                     .userId(emp.getId())
                     .token(refreshToken)
+                    .version(initialVersion) // Save the version in DB
                     .expiryDate(LocalDateTime.now().plusDays(7))
                     .build();
             employeeRefreshTokenRepository.save(et);
@@ -73,41 +77,36 @@ public class EmployeeService {
     }
 
     public Map<String, String> refreshEmployeeToken(String refreshToken) {
-        // 1. Basic Null Check & Physical Validation (The "Real JWT" Check)
         if (refreshToken == null || !jwtUtil.validateToken(refreshToken.trim())) {
             throw new RuntimeException("Refresh token is invalid or expired");
         }
 
         String cleanToken = refreshToken.trim();
 
-        // 2. THE OWNER'S CHECK (The Database Truth)
-        // If you delete this from MongoDB, the employee is KICKED OUT here.
         EmployeeRefreshToken storedToken = employeeRefreshTokenRepository.findByToken(cleanToken)
-                .orElseThrow(() -> new RuntimeException("Employee session has been revoked. Access Denied."));
+                .orElseThrow(() -> new RuntimeException("Session revoked."));
 
-        // 3. Extraction of Identity Claims
         String empId = jwtUtil.extractUserId(cleanToken);
         String hotelId = jwtUtil.extractHotelId(cleanToken);
         String role = jwtUtil.extractRole(cleanToken);
 
-        // Security Guard: Cross-verify the token identity against the database record
-        // This prevents one employee from potentially using a stolen token structure
         if (!storedToken.getUserId().equals(empId)) {
-            throw new RuntimeException("Identity mismatch. Security alert triggered.");
+            throw new RuntimeException("Identity mismatch.");
         }
 
-        // --- 4. TOKEN ROTATION (Enterprise Production Standard) ---
-        // Generate a fresh set to replace the used ones
-        String newAccessToken = jwtUtil.generateAccessToken(empId, hotelId, role);
-        String newRefreshToken = jwtUtil.generateRefreshToken(empId, hotelId, role);
+        // --- VERSION KILLER LOGIC ---
+        // 3. Increment the version to kill old access tokens
+        Long newVersion = (storedToken.getVersion() != null ? storedToken.getVersion() : 1L) + 1;
 
-        // 5. UPDATE the existing Database Record
-        // Overwriting the old token ensures 'maxLogins' count remains accurate (doesn't increase)
+        // 4. Pass the newVersion as the 4th argument
+        String newAccessToken = jwtUtil.generateAccessToken(empId, hotelId, role, newVersion);
+        String newRefreshToken = jwtUtil.generateRefreshToken(empId, hotelId, role, newVersion);
+
         storedToken.setToken(newRefreshToken);
+        storedToken.setVersion(newVersion); // Update version in DB
         storedToken.setExpiryDate(LocalDateTime.now().plusDays(7));
         employeeRefreshTokenRepository.save(storedToken);
 
-        // 6. Return the new pair
         return Map.of(
                 "accessToken", newAccessToken,
                 "refreshToken", newRefreshToken

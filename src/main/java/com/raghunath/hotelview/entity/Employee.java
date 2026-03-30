@@ -25,4 +25,6 @@ public class Employee {
     private boolean isActive = true;
 
     private int maxLogins = 1;
+
+    private Long tokenVersion = 1L;
 }

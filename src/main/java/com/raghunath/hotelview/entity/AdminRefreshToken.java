@@ -2,23 +2,18 @@ package com.raghunath.hotelview.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Document(collection = "admin_refresh_tokens") // or "employee_refresh_tokens"
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Document(collection = "admin_refresh_tokens")
 public class AdminRefreshToken {
     @Id
     private String id;
-    @Indexed
-    private String userId;   // Admin ID or Employee ID
-    @Indexed(unique = true)
-    private String token;    // The actual JWT
+    private String userId;
+    private String token;
     private LocalDateTime expiryDate;
+
+    // --- ADD THIS FIELD ---
+    private Long version;
 }
