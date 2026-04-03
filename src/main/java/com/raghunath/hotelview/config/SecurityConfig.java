@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/refresh-token", "/api/v1/employees/refresh-token").permitAll()
 
                         // 2. Staff Management (Admin Only)
-                        .requestMatchers("/api/v1/employees/register", "/api/v1/orders/completed/**", "/api/v1/employees/list").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/employees/register", "/api/v1/orders/completed/**", "/api/v1/orders/completed/delivery/today", "/api/v1/employees/list").hasRole("ADMIN")
 
                                 // 3. Kitchen Operations: Waiters can VIEW, but only CHEF/ADMIN can UPDATE
                                 .requestMatchers(HttpMethod.GET, "/api/v1/orders/kitchen/**").hasAnyRole("WAITER", "CHEF", "ADMIN")

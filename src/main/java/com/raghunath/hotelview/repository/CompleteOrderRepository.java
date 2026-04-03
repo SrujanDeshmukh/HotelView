@@ -14,6 +14,8 @@ public interface CompleteOrderRepository extends MongoRepository<CompletedOrder,
     List<CompletedOrder> findByHotelIdAndCustomerMobile(String hotelId, String customerMobile);
     List<CompletedOrder> findTop10ByHotelIdOrderByCheckoutAtDesc(String hotelId);
     List<CompletedOrder> findByHotelIdAndCheckoutDateBetween(String hotelId, String startDate, String endDate);
+    List<CompletedOrder> findByHotelIdAndOrderTypeAndCheckoutDateOrderByCheckoutAtDesc(
+            String hotelId, String orderType, String checkoutDate);
 
     // --- NEW: Paging API (Only fetches ID, Name, Mobile, Date, and Total) ---
     // In CompleteOrderRepository.java

@@ -1,6 +1,7 @@
 package com.raghunath.hotelview.service.admin;
 
 import com.raghunath.hotelview.dto.admin.CheckoutRequest;
+import com.raghunath.hotelview.dto.admin.DeliverySummaryDTO;
 import com.raghunath.hotelview.dto.admin.ReceiptResponse;
 import com.raghunath.hotelview.dto.admin.OrderItem;
 import com.raghunath.hotelview.entity.Admin;
@@ -93,7 +94,7 @@ public class OrderService {
                 .orderType("TABLE")
                 .items(items)
                 .totalAmount(total)
-                .status("PENDING") // The order is pending
+                .status("PENDING")
                 .createdBy(waiterId)
                 .createdAt(nowIST.toLocalDateTime())
                 .createdDate(nowIST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
@@ -103,8 +104,9 @@ public class OrderService {
         kitchenOrderRepository.save(kOrder);
         draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(draftRepository::delete);
 
-        // CRITICAL: New order always pushes Table status back to PENDING
+        // --- ADD THESE TWO LINES HERE ---
         updateTableVisualStatus(hotelId, tableNumber, "PENDING");
+        updateTableBill(hotelId, tableNumber, total, false); // Adds 'total' to the table's current bill
 
         return "Table order sent to kitchen";
     }
@@ -183,24 +185,24 @@ public class OrderService {
 
     @Transactional
     public String checkoutOrders(String hotelId, CheckoutRequest request) {
-        // 1. Fetch active orders from the kitchen
+        // 1. Fetch active orders from the kitchen collection
         List<KitchenOrder> activeOrders = kitchenOrderRepository.findAllById(request.getOrderIds());
         if (activeOrders.isEmpty()) {
-            throw new RuntimeException("No orders found to checkout for these IDs");
+            throw new RuntimeException("No active orders found to checkout for these IDs");
         }
 
-        // 2. Calculate final totals and timing in IST
+        // 2. Calculate grand total and get current Indian Standard Time
         Double grandTotal = activeOrders.stream().mapToDouble(KitchenOrder::getTotalAmount).sum();
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-        // 3. Build the Archive Document (CompletedOrder)
+        // 3. Build the Archive Document (CompletedOrder) for long-term history
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType(activeOrders.get(0).getOrderType())
                 .customerName(request.getCustomerName())
                 .customerMobile(request.getCustomerMobile())
                 .customerAddress(request.getCustomerAddress())
-                .allOrders(activeOrders) // Full nesting of original kitchen orders
+                .allOrders(activeOrders) // Keep full order history nested
                 .grandTotal(grandTotal)
                 .paymentStatus("PAID")
                 .checkoutAt(nowIST.toLocalDateTime())
@@ -208,25 +210,28 @@ public class OrderService {
                 .checkoutTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
                 .build();
 
-        // 4. Save to history collection
+        // 4. Save to the completed_orders collection
         CompletedOrder savedBill = completeOrderRepository.save(finalBill);
 
-        // 5. ATOMIC CLEANUP & TABLE RESET
+        // 5. ATOMIC CLEANUP: Only clear kitchen and reset table if save was successful
         if (savedBill.getId() != null) {
-            // Remove active orders from kitchen display
+            // Remove from the 'Active' kitchen view
             kitchenOrderRepository.deleteAll(activeOrders);
 
-            // Reset the Physical Table Status to INACTIVE
+            // Identify if this was a Table order
             Integer tableNum = activeOrders.get(0).getTableNumber();
-            if ("TABLE".equalsIgnoreCase(activeOrders.get(0).getOrderType()) && tableNum != null) {
+            String orderType = activeOrders.get(0).getOrderType();
 
-                // We find and reset the table's visual status AND its current bill
-                tableRepository.findByHotelIdAndTableNumber(hotelId, tableNum).ifPresent(t -> {
-                    t.setStatus("INACTIVE"); // Per your requirement: InActive after checkout
-                    t.setCurrentBill(0.0);   // Reset bill to zero for next guest
-                    tableRepository.save(t);
-                    log.info("TABLE_RESET: Hotel {} Table {} is now INACTIVE", hotelId, tableNum);
-                });
+            if ("TABLE".equalsIgnoreCase(orderType) && tableNum != null) {
+
+                // --- SYNC TABLE STATE ---
+                // Set Status to INACTIVE (Available)
+                updateTableVisualStatus(hotelId, tableNum, "INACTIVE");
+
+                // Reset the Current Bill to 0.0 for the next guest
+                updateTableBill(hotelId, tableNum, 0.0, true);
+
+                log.info("CHECKOUT_COMPLETE: Hotel {} Table {} is now free and bill is reset.", hotelId, tableNum);
             }
         }
 
@@ -302,4 +307,43 @@ public class OrderService {
         });
     }
 
+    /**
+     * FETCH TODAY'S COMPLETED HOME DELIVERIES (Clean Summary):
+     * Returns only the essential fields for the dashboard list.
+     */
+    public List<DeliverySummaryDTO> getTodayCompletedHomeDeliveries(String hotelId) {
+        ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        String todayDate = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        List<CompletedOrder> orders = completeOrderRepository
+                .findByHotelIdAndOrderTypeAndCheckoutDateOrderByCheckoutAtDesc(
+                        hotelId, "HOME_DELIVERY", todayDate);
+
+        // Map Entity to DTO
+        return orders.stream().map(order -> DeliverySummaryDTO.builder()
+                        .id(order.getId())
+                        .orderType(order.getOrderType())
+                        .customerName(order.getCustomerName())
+                        .customerMobile(order.getCustomerMobile())
+                        .grandTotal(order.getGrandTotal())
+                        .checkoutAt(order.getCheckoutAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private void updateTableBill(String hotelId, Integer tableNumber, Double amountToAdd, boolean isReset) {
+        if (tableNumber == null) return;
+
+        tableRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(table -> {
+            if (isReset) {
+                table.setCurrentBill(0.0);
+            } else {
+                // Logic: Existing Bill + New Order Total
+                Double existingBill = table.getCurrentBill() != null ? table.getCurrentBill() : 0.0;
+                table.setCurrentBill(existingBill + amountToAdd);
+            }
+            tableRepository.save(table);
+            log.info("BILL_SYNC: Hotel {} Table {} updated to {}", hotelId, tableNumber, table.getCurrentBill());
+        });
+    }
 }

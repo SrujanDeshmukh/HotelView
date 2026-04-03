@@ -1,5 +1,6 @@
 package com.raghunath.hotelview.controller.admin;
 
+import com.raghunath.hotelview.dto.admin.DeliverySummaryDTO;
 import com.raghunath.hotelview.dto.admin.ReceiptResponse;
 import com.raghunath.hotelview.entity.CompletedOrder;
 import com.raghunath.hotelview.service.admin.OrderService;
@@ -19,8 +20,7 @@ public class CompletedOrderController {
     private final OrderService orderService;
 
     /**
-     * API 1: Paged Summary List
-     * Returns: ID, Name, Mobile, CheckoutAt, GrandTotal (5 per page)
+     * API 1: Paged Summary List (Archive)
      */
     @GetMapping("/list")
     public ResponseEntity<Page<CompletedOrder>> getCompletedList(
@@ -30,21 +30,16 @@ public class CompletedOrderController {
     }
 
     /**
-     * API 2: Full Document Detail
-     * Fetches everything (including items array) for a specific ID
+     * API 2: Full Document Detail for Receipt/View
      */
     @GetMapping("/{id}")
     public ResponseEntity<ReceiptResponse> getOrderDetails(@PathVariable String id) {
-        // Fetch hotelId from the Access Token (Security Context)
-        String hotelId = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication().getName();
-
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(orderService.getReceiptDetails(id, hotelId));
     }
 
     /**
-     * API 3: Search by Name or Mobile
-     * Parameters: hotelId (from token), query (name or mobile)
+     * API 3: Search Archive by Name or Mobile
      */
     @GetMapping("/search")
     public ResponseEntity<List<CompletedOrder>> searchOrders(@RequestParam String query) {
@@ -52,4 +47,13 @@ public class CompletedOrderController {
         return ResponseEntity.ok(orderService.searchCompletedOrders(hotelId, query));
     }
 
+    /**
+     * API 4: NEW - Fetch Today's Completed Home Deliveries (IST)
+     * Fetches from completed_orders collection where type is HOME_DELIVERY
+     */
+    @GetMapping("/delivery/today")
+    public ResponseEntity<List<DeliverySummaryDTO>> getTodayCompletedDeliveries() {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(orderService.getTodayCompletedHomeDeliveries(hotelId));
+    }
 }
