@@ -93,7 +93,7 @@ public class OrderService {
                 .orderType("TABLE")
                 .items(items)
                 .totalAmount(total)
-                .status("PENDING")
+                .status("PENDING") // The order is pending
                 .createdBy(waiterId)
                 .createdAt(nowIST.toLocalDateTime())
                 .createdDate(nowIST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
@@ -103,11 +103,11 @@ public class OrderService {
         kitchenOrderRepository.save(kOrder);
         draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(draftRepository::delete);
 
-        // Use the helper only for TABLE orders
+        // CRITICAL: New order always pushes Table status back to PENDING
         updateTableVisualStatus(hotelId, tableNumber, "PENDING");
+
         return "Table order sent to kitchen";
     }
-
 
     @Transactional
     public String confirmHomeDelivery(String hotelId, List<OrderItem> items, String waiterId) {
@@ -146,9 +146,6 @@ public class OrderService {
         KitchenOrder order = kitchenOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // Debug log to see what Java sees before the update
-        log.info("Updating Order: ID={}, Type={}, Table={}", order.getId(), order.getOrderType(), order.getTableNumber());
-
         Query query = new Query(Criteria.where("id").is(orderId));
         Update update = new Update();
         update.set("status", newStatus.toUpperCase());
@@ -159,18 +156,25 @@ public class OrderService {
 
         mongoTemplate.updateFirst(query, update, KitchenOrder.class);
 
-        // STRICT GUARD: Only enter if it is explicitly a TABLE order and tableNumber is NOT null and NOT 0
-        if ("TABLE".equalsIgnoreCase(order.getOrderType()) &&
-                order.getTableNumber() != null &&
-                order.getTableNumber() > 0) {
+        // Syncing Table Status
+        if ("TABLE".equalsIgnoreCase(order.getOrderType()) && order.getTableNumber() != null) {
+            String tableUIStatus;
 
-            String tableUIStatus = "COMPLETED".equalsIgnoreCase(newStatus) ? "ACTIVE" : newStatus.toUpperCase();
+            switch (newStatus.toUpperCase()) {
+                case "ACCEPTED":
+                case "PREPARING":
+                    tableUIStatus = "ACCEPTED";
+                    break;
+                case "COMPLETED":
+                    tableUIStatus = "ACTIVE"; // Chef finished, customer is eating
+                    break;
+                default:
+                    tableUIStatus = newStatus.toUpperCase();
+            }
+
             updateTableVisualStatus(order.getHotelId(), order.getTableNumber(), tableUIStatus);
-        } else {
-            log.info("SKIPPING_UI_UPDATE: Home Delivery or Invalid Table Number detected.");
         }
-    }
-    /**
+    }/**
      * 6. GENERAL STATUS UPDATE: Fallback for direct status changes.
      */
     public void updateOrderStatus(String orderId, String newStatus) {
@@ -179,21 +183,24 @@ public class OrderService {
 
     @Transactional
     public String checkoutOrders(String hotelId, CheckoutRequest request) {
-        // 1. Fetch active orders
+        // 1. Fetch active orders from the kitchen
         List<KitchenOrder> activeOrders = kitchenOrderRepository.findAllById(request.getOrderIds());
-        if (activeOrders.isEmpty()) throw new RuntimeException("No orders found to checkout");
+        if (activeOrders.isEmpty()) {
+            throw new RuntimeException("No orders found to checkout for these IDs");
+        }
 
+        // 2. Calculate final totals and timing in IST
         Double grandTotal = activeOrders.stream().mapToDouble(KitchenOrder::getTotalAmount).sum();
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-        // 2. Build the Archive Document
+        // 3. Build the Archive Document (CompletedOrder)
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType(activeOrders.get(0).getOrderType())
                 .customerName(request.getCustomerName())
                 .customerMobile(request.getCustomerMobile())
                 .customerAddress(request.getCustomerAddress())
-                .allOrders(activeOrders) // Full nesting
+                .allOrders(activeOrders) // Full nesting of original kitchen orders
                 .grandTotal(grandTotal)
                 .paymentStatus("PAID")
                 .checkoutAt(nowIST.toLocalDateTime())
@@ -201,22 +208,30 @@ public class OrderService {
                 .checkoutTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
                 .build();
 
-        // 3. Save to completed collection
+        // 4. Save to history collection
         CompletedOrder savedBill = completeOrderRepository.save(finalBill);
 
-        // 4. ATOMIC CLEANUP: Only if save was successful
+        // 5. ATOMIC CLEANUP & TABLE RESET
         if (savedBill.getId() != null) {
+            // Remove active orders from kitchen display
             kitchenOrderRepository.deleteAll(activeOrders);
 
-            // Reset table status if applicable
-            if (activeOrders.get(0).getTableNumber() != null) {
-                updateTableVisualStatus(hotelId, activeOrders.get(0).getTableNumber(), "AVAILABLE");
+            // Reset the Physical Table Status to INACTIVE
+            Integer tableNum = activeOrders.get(0).getTableNumber();
+            if ("TABLE".equalsIgnoreCase(activeOrders.get(0).getOrderType()) && tableNum != null) {
+
+                // We find and reset the table's visual status AND its current bill
+                tableRepository.findByHotelIdAndTableNumber(hotelId, tableNum).ifPresent(t -> {
+                    t.setStatus("INACTIVE"); // Per your requirement: InActive after checkout
+                    t.setCurrentBill(0.0);   // Reset bill to zero for next guest
+                    tableRepository.save(t);
+                    log.info("TABLE_RESET: Hotel {} Table {} is now INACTIVE", hotelId, tableNum);
+                });
             }
         }
 
         return "Success";
     }
-
     // --- API 1: Paged Fetch (5 at a time) ---
     public Page<CompletedOrder> getCompletedOrdersPaged(String hotelId, int pageNumber) {
         Pageable pageable = PageRequest.of(pageNumber, 5, Sort.by("checkoutAt").descending());
