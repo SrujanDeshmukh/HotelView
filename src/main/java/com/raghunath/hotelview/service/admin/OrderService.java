@@ -333,42 +333,43 @@ public class OrderService {
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         String todayDate = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE); // yyyy-MM-dd
 
-        // 2. Fetch Metrics from respective Repositories
+        // 2. Fetch Metrics
 
-        // Table Stats: Tables where status is ACTIVE
-        Long activeTables = tableRepository.countByHotelIdAndStatus(hotelId, "ACTIVE");
+        // UPDATE: Total tables currently occupied (everything NOT INACTIVE)
+        Long occupiedTables = tableRepository.countByHotelIdAndStatusNot(hotelId, "INACTIVE");
 
-        // Delivery Stats: KitchenOrders where type is Delivery and status is PENDING
-        Long pendingDeliveries = kitchenOrderRepository.countByHotelIdAndOrderTypeAndStatus(
-                hotelId, "HOME_DELIVERY", "PENDING");
+        // UPDATE: Total Home Delivery volume for today (Total Today)
+        Long totalHomeDeliveriesToday = kitchenOrderRepository.countByHotelIdAndOrderTypeAndCreatedDate(
+                hotelId, "HOME_DELIVERY", todayDate);
 
-        // Employee Stats: Count all active employees (we will add 'onlineStatus' later)
+        // Employee Stats: Count all active employees
         Long employeeCount = employeeRepository.countByHotelIdAndIsActive(hotelId, true);
 
         // Menu Item Stats: Count all items for this hotel
         Long totalItems = menuItemRepository.countByHotelId(hotelId);
 
-        // 3. Financial/Archive Metrics (CompletedOrder Collection)
-
         // Completed Orders Today count
         Long completedTodayCount = completeOrderRepository.countByHotelIdAndCheckoutDate(
                 hotelId, todayDate);
 
-        // Todays Sales Rupees till now
-        Double todaySalesRupees = completeOrderRepository.sumGrandTotalByHotelIdAndCheckoutDate(
-                hotelId, todayDate);
-
-        // Handle potential null from sum aggregation
-        double finalTodaySales = todaySalesRupees != null ? todaySalesRupees : 0.0;
+        // 3. Financial Aggregation (Sales till now)
+        Double todaySalesRupees = 0.0;
+        try {
+            Double result = completeOrderRepository.sumGrandTotalByHotelIdAndCheckoutDate(hotelId, todayDate);
+            todaySalesRupees = (result != null) ? result : 0.0;
+        } catch (Exception e) {
+            log.error("AGGREGATION_ERROR: Sales sum failed for hotel {}", hotelId);
+            todaySalesRupees = 0.0;
+        }
 
         // 4. Build and return the consolidated DTO
         return DashboardStatsDTO.builder()
-                .activeTablesCount(activeTables)
-                .pendingHomeDeliveriesCount(pendingDeliveries)
+                .activeTablesCount(occupiedTables)
+                .pendingHomeDeliveriesCount(totalHomeDeliveriesToday) // UI Heading: "Total Today"
                 .completedOrdersTodayCount(completedTodayCount)
                 .employeeOnlineCount(employeeCount)
                 .totalItemsCount(totalItems)
-                .todaySalesRupees(finalTodaySales)
+                .todaySalesRupees(todaySalesRupees)
                 .build();
     }
 

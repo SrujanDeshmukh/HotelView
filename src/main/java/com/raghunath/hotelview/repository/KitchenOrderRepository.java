@@ -15,4 +15,5 @@ public interface KitchenOrderRepository extends MongoRepository<KitchenOrder, St
     List<KitchenOrder> findByHotelIdAndStatus(String hotelId, String status);
 
     Long countByHotelIdAndOrderTypeAndStatus(String hotelId, String orderType, String status);
+    Long countByHotelIdAndOrderTypeAndCreatedDate(String hotelId, String orderType, String createdDate);
 }

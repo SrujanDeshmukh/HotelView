@@ -21,7 +21,10 @@ public interface CompleteOrderRepository extends MongoRepository<CompletedOrder,
     Long countByHotelIdAndCheckoutDate(String hotelId, String checkoutDate);
 
     // MongoDB Aggregation for Sum
-    @Aggregation("{ $match: { hotelId: ?0, checkoutDate: ?1 } }, { $group: { _id: null, total: { $sum: '$grandTotal' } } }")
+    @Aggregation(pipeline = {
+            "{ $match: { hotelId: ?0, checkoutDate: ?1 } }",
+            "{ $group: { _id: null, total: { $sum: '$grandTotal' } } }"
+    })
     Double sumGrandTotalByHotelIdAndCheckoutDate(String hotelId, String checkoutDate);
 
     // --- NEW: Paging API (Only fetches ID, Name, Mobile, Date, and Total) ---
