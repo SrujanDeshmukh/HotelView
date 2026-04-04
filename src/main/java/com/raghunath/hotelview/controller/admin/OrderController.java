@@ -73,7 +73,11 @@ public class OrderController {
     @PostMapping("/checkout")
     public ResponseEntity<String> checkout(@RequestBody CheckoutRequest request) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(orderService.checkoutOrders(hotelId, request));
+
+        // This now returns the MongoDB _id of the newly created CompletedOrder
+        String completedOrderId = orderService.checkoutOrders(hotelId, request);
+
+        return ResponseEntity.ok(completedOrderId);
     }
 
     // 5. CHEF: FETCH PENDING ORDERS (New orders only)

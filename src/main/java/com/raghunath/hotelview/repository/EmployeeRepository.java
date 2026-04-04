@@ -9,4 +9,6 @@ public interface EmployeeRepository extends MongoRepository<Employee, String> {
     Optional<Employee> findByUsername(String username);
     List<Employee> findAllByHotelId(String hotelId);
     boolean existsByUsername(String username);
+
+    Long countByHotelIdAndIsActive(String hotelId, boolean b);
 }

@@ -201,7 +201,7 @@ public class OrderService {
                 .customerName(request.getCustomerName())
                 .customerMobile(request.getCustomerMobile())
                 .customerAddress(request.getCustomerAddress())
-                .allOrders(activeOrders) // Keep full order history nested
+                .allOrders(activeOrders)
                 .grandTotal(grandTotal)
                 .paymentStatus("PAID")
                 .checkoutAt(nowIST.toLocalDateTime())
@@ -214,27 +214,20 @@ public class OrderService {
 
         // 5. ATOMIC CLEANUP: Only clear kitchen and reset table if save was successful
         if (savedBill.getId() != null) {
-            // Remove from the 'Active' kitchen view
             kitchenOrderRepository.deleteAll(activeOrders);
 
-            // Identify if this was a Table order
             Integer tableNum = activeOrders.get(0).getTableNumber();
             String orderType = activeOrders.get(0).getOrderType();
 
             if ("TABLE".equalsIgnoreCase(orderType) && tableNum != null) {
-
-                // --- SYNC TABLE STATE ---
-                // Set Status to INACTIVE (Available)
                 updateTableVisualStatus(hotelId, tableNum, "INACTIVE");
-
-                // Reset the Current Bill to 0.0 for the next guest
                 updateTableBill(hotelId, tableNum, 0.0, true);
-
                 log.info("CHECKOUT_COMPLETE: Hotel {} Table {} is now free and bill is reset.", hotelId, tableNum);
             }
         }
 
-        return "Success";
+        // Return the MongoDB ID of the completed order instead of "Success"
+        return savedBill.getId();
     }
     // --- API 1: Paged Fetch (5 at a time) ---
     public Page<CompletedOrder> getCompletedOrdersPaged(String hotelId, int pageNumber) {
