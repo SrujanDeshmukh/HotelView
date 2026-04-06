@@ -3,6 +3,7 @@ package com.raghunath.hotelview.controller.admin;
 import com.raghunath.hotelview.dto.admin.CheckoutRequest;
 import com.raghunath.hotelview.dto.admin.DashboardStatsDTO;
 import com.raghunath.hotelview.dto.admin.OrderItem;
+import com.raghunath.hotelview.dto.admin.OrderRequest;
 import com.raghunath.hotelview.entity.CompletedOrder;
 import com.raghunath.hotelview.entity.KitchenOrder;
 import com.raghunath.hotelview.entity.OrderDraft;
@@ -46,10 +47,20 @@ public class OrderController {
     // 1. PLACE ORDER (Updated to accept current items from UI)
     // 1. PLACE TABLE ORDER
     @PostMapping("/confirm/{tableNumber}")
-    public ResponseEntity<String> confirmOrder(@PathVariable int tableNumber, @Valid @RequestBody List<OrderItem> items) {
+    public ResponseEntity<String> confirmOrder(@PathVariable int tableNumber, @Valid @RequestBody OrderRequest request
+    ) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         String waiterId = getAuthenticatedUserId();
-        return ResponseEntity.ok(orderService.confirmOrder(hotelId, tableNumber, items, waiterId));
+
+        orderService.confirmOrder(
+                hotelId,
+                tableNumber,
+                request.getItems(),
+                waiterId,
+                request.getComment()
+        );
+
+        return ResponseEntity.ok("Order sent to kitchen");
     }
 
     // 2. PLACE HOME DELIVERY ORDER

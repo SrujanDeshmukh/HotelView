@@ -27,6 +27,7 @@ public class KitchenOrder {
     private List<OrderItem> items;
     private Double totalAmount;
     private String status;
+    private String comments;
 
     private String createdBy;
     private String acceptedBy;

@@ -82,7 +82,7 @@ public class OrderService {
      * Table status becomes 'PENDING' to alert the Chef.
      */
     @Transactional
-    public String confirmOrder(String hotelId, int tableNumber, List<OrderItem> items, String waiterId) {
+    public String confirmOrder(String hotelId, int tableNumber, List<OrderItem> items, String waiterId, String comment) {
         validateTableExists(hotelId, tableNumber);
         ZonedDateTime nowIST = getISTNow();
         Double total = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
@@ -94,6 +94,7 @@ public class OrderService {
                 .items(items)
                 .totalAmount(total)
                 .status("PENDING")
+                .comments(comment)
                 .createdBy(waiterId)
                 .createdAt(nowIST.toLocalDateTime())
                 .createdDate(nowIST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
@@ -107,7 +108,7 @@ public class OrderService {
         updateTableVisualStatus(hotelId, tableNumber, "PENDING");
         updateTableBill(hotelId, tableNumber, total, false); // Adds 'total' to the table's current bill
 
-        return "Table order sent to kitchen";
+        return "Order sent to kitchen";
     }
 
     @Transactional
