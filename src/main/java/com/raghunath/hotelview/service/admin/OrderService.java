@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -199,9 +200,13 @@ public class OrderService {
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType(activeOrders.get(0).getOrderType())
-                .customerName(request.getCustomerName())
-                .customerMobile(request.getCustomerMobile())
-                .customerAddress(request.getCustomerAddress())
+
+                // Handling Optional Fields with Defaults
+                // This version catches NULL, "" (empty), and " " (just a space)
+                .customerName(StringUtils.hasText(request.getCustomerName()) ? request.getCustomerName() : "Walk-in Guest")
+                .customerMobile(StringUtils.hasText(request.getCustomerMobile()) ? request.getCustomerMobile() : "0000000000")
+                .customerAddress(StringUtils.hasText(request.getCustomerAddress()) ? request.getCustomerAddress() : "N/A")
+
                 .allOrders(activeOrders)
                 .grandTotal(grandTotal)
                 .paymentStatus("PAID")
