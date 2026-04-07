@@ -25,6 +25,11 @@ public class CompletedOrder {
 
     private Double grandTotal;
     private String paymentStatus;
+    private Double discountPercent;
+
+    private Double discountAmount;
+
+    private Double totalPayable;
 
     private LocalDateTime checkoutAt;
     private String checkoutDate;

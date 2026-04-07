@@ -13,4 +13,5 @@ public class CheckoutRequest {
     private String customerName;
     private String customerMobile;
     private String customerAddress;
+    private Double discount;
 }

@@ -19,7 +19,13 @@ public class ReceiptResponse {
     private String time;
     private String orderType;
     private List<FlattenedItem> items;
-    private Double grandTotal;
+
+    // --- UPDATED PRICING SECTION ---
+    private Double grandTotal;     // The original sum (e.g., 1000)
+    private Double discountPercent; // The % entered (e.g., 10)
+    private Double discountAmount;  // The calculated deduction (e.g., 100)
+    private Double totalPayable;    // The final amount after discount (e.g., 900)
+    // -------------------------------
 
     // Customer Info
     private String customerName;

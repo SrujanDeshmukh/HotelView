@@ -2,6 +2,7 @@
   {
     "category": "Starter",
     "name": "French Fries",
+    "shortCode": "FF",
     "description": "Crispy golden fried potato sticks",
     "price": 110,
     "isVeg": true,
@@ -12,6 +13,7 @@
   {
     "category": "Starter",
     "name": "Masala French Fries",
+    "shortCode": "MFF",
     "description": "Crispy fries tossed with Indian spices",
     "price": 130,
     "isVeg": true,
@@ -22,6 +24,7 @@
   {
     "category": "Starter",
     "name": "Veg Manchurian",
+    "shortCode": "VM",
     "description": "Deep fried vegetable balls in tangy sauce",
     "price": 180,
     "isVeg": true,
@@ -32,6 +35,7 @@
   {
     "category": "Starter",
     "name": "Paneer Chilli",
+    "shortCode": "PC",
     "description": "Spicy paneer cubes with bell peppers and onions",
     "price": 190,
     "isVeg": true,
@@ -42,6 +46,7 @@
   {
     "category": "Starter",
     "name": "Hakka Noodles",
+    "shortCode": "HN",
     "description": "Stir-fried noodles with vegetables",
     "price": 140,
     "isVeg": true,
@@ -52,6 +57,7 @@
   {
     "category": "Starter",
     "name": "Schezwan Noodles",
+    "shortCode": "SN",
     "description": "Spicy noodles with schezwan sauce",
     "price": 150,
     "isVeg": true,
@@ -62,6 +68,7 @@
   {
     "category": "Starter",
     "name": "Veg Lollipop",
+    "shortCode": "VL",
     "description": "Crispy vegetable lollipops with tangy dip",
     "price": 180,
     "isVeg": true,
@@ -72,6 +79,7 @@
   {
     "category": "Starter",
     "name": "Chana Roast",
+    "shortCode": "CR",
     "description": "Roasted chickpeas with aromatic spices",
     "price": 180,
     "isVeg": true,
@@ -82,6 +90,7 @@
   {
     "category": "Starter",
     "name": "Chana Chilli",
+    "shortCode": "CC",
     "description": "Spicy chickpeas in Indo-Chinese style",
     "price": 180,
     "isVeg": true,
@@ -92,6 +101,7 @@
   {
     "category": "Starter",
     "name": "Paneer 65",
+    "shortCode": "P65",
     "description": "Spicy fried paneer cubes with curry leaves",
     "price": 200,
     "isVeg": true,
@@ -102,6 +112,7 @@
   {
     "category": "Starter",
     "name": "Veg 65",
+    "shortCode": "V65",
     "description": "Crispy fried vegetables with spicy coating",
     "price": 160,
     "isVeg": true,
@@ -112,6 +123,7 @@
   {
     "category": "Starter",
     "name": "Hara Bhara Kabab",
+    "shortCode": "HBK",
     "description": "Green vegetable kebabs with spinach and peas",
     "price": 190,
     "isVeg": true,
@@ -122,6 +134,7 @@
   {
     "category": "Starter",
     "name": "Garlic Fry",
+    "shortCode": "GF",
     "description": "Crispy fried vegetables tossed in garlic sauce",
     "price": 180,
     "isVeg": true,
@@ -132,6 +145,7 @@
   {
     "category": "Starter",
     "name": "Paneer Tikka Dry",
+    "shortCode": "PTD",
     "description": "Grilled paneer cubes marinated in tandoori spices",
     "price": 250,
     "isVeg": true,
@@ -142,6 +156,7 @@
   {
     "category": "Starter",
     "name": "Bhindi Roasted",
+    "shortCode": "BR",
     "description": "Bhindi Roasted",
     "price": 180,
     "isVeg": true,
@@ -152,6 +167,7 @@
   {
     "category": "Starter",
     "name": "Paneer Crispy",
+    "shortCode": "PC",
     "description": "Paneer Crispy",
     "price": 200,
     "isVeg": true,
@@ -162,6 +178,7 @@
   {
     "category": "Starter",
     "name": "Crispy Corn",
+    "shortCode": "CC",
     "description": "Crispy Corn",
     "price": 200,
     "isVeg": true,
@@ -172,6 +189,7 @@
   {
     "category": "Starter",
     "name": "Manchurian Noodles",
+    "shortCode": "MN",
     "description": "Manchurian Noodles",
     "price": 160,
     "isVeg": true,
@@ -182,6 +200,7 @@
   {
     "category": "Starter",
     "name": "Chinese Bhel",
+    "shortCode": "CB",
     "description": "Chinese Bhel",
     "price": 160,
     "isVeg": true,
@@ -192,6 +211,7 @@
   {
     "category": "Papad",
     "name": "Roasted Papad",
+    "shortCode": "RP",
     "description": "Crispy roasted lentil wafers",
     "price": 20,
     "isVeg": true,
@@ -202,6 +222,7 @@
   {
     "category": "Papad",
     "name": "Fried Papad",
+    "shortCode": "FP",
     "description": "Deep fried crispy papad",
     "price": 25,
     "isVeg": true,
@@ -212,6 +233,7 @@
   {
     "category": "Papad",
     "name": "Masala Papad",
+    "shortCode": "MP",
     "description": "Papad topped with onion tomato and spices",
     "price": 30,
     "isVeg": true,
@@ -222,6 +244,7 @@
   {
     "category": "Papad",
     "name": "Nagli Papad",
+    "shortCode": "NP",
     "description": "Ragi papad roasted to perfection",
     "price": 35,
     "isVeg": true,
@@ -232,6 +255,7 @@
   {
     "category": "Papad",
     "name": "Papad Churi",
+    "shortCode": "PC",
     "description": "Crushed papad mixed with spices and onions",
     "price": 60,
     "isVeg": true,
@@ -242,6 +266,7 @@
   {
     "category": "Salad",
     "name": "Green Salad",
+    "shortCode": "GS",
     "description": "Fresh cucumber, carrots, and lettuce",
     "price": 80,
     "isVeg": true,
@@ -252,6 +277,7 @@
   {
     "category": "Salad",
     "name": "Tomato Salad",
+    "shortCode": "TS",
     "description": "Sliced tomatoes with onions and lemon",
     "price": 60,
     "isVeg": true,
@@ -262,6 +288,7 @@
   {
     "category": "Beverage",
     "name": "Masala chach",
+    "shortCode": "MC",
     "description": "Spiced yogurt drink with roasted cumin",
     "price": 35,
     "isVeg": true,
@@ -272,6 +299,7 @@
   {
     "category": "Beverage",
     "name": "Boondi Raita",
+    "shortCode": "BR",
     "description": "Yogurt with crispy boondi and spices",
     "price": 60,
     "isVeg": true,
@@ -282,6 +310,7 @@
   {
     "category": "Beverage",
     "name": "Lassi",
+    "shortCode": "L",
     "description": "Sweet yogurt drink",
     "price": 50,
     "isVeg": true,
@@ -292,6 +321,7 @@
   {
     "category": "Beverage",
     "name": "Nimbu sharbat",
+    "shortCode": "NS",
     "description": "Fresh lime water with sugar and salt",
     "price": 25,
     "isVeg": true,
@@ -302,6 +332,7 @@
   {
     "category": "Beverage",
     "name": "Dahi",
+    "shortCode": "D",
     "description": "Fresh homemade yogurt",
     "price": 50,
     "isVeg": true,
@@ -312,6 +343,7 @@
   {
     "category": "Beverage",
     "name": "Water Bottle",
+    "shortCode": "WB",
     "description": "Packaged drinking water",
     "price": 20,
     "isVeg": true,
@@ -322,6 +354,7 @@
   {
     "category": "Soup",
     "name": "Tomato Soup",
+    "shortCode": "TS",
     "description": "Classic tomato soup with cream",
     "price": 100,
     "isVeg": true,
@@ -332,6 +365,7 @@
   {
     "category": "Soup",
     "name": "Manchow Soup",
+    "shortCode": "MS",
     "description": "Spicy Indo-Chinese soup with vegetables",
     "price": 120,
     "isVeg": true,
@@ -342,6 +376,7 @@
   {
     "category": "Soup",
     "name": "Hot & Sour Soup",
+    "shortCode": "HSS",
     "description": "Tangy and spicy vegetable soup",
     "price": 120,
     "isVeg": true,
@@ -352,6 +387,7 @@
   {
     "category": "Soup",
     "name": "Manchurian Soup",
+    "shortCode": "MS",
     "description": "Soup with vegetable manchurian balls",
     "price": 120,
     "isVeg": true,
@@ -362,6 +398,7 @@
   {
     "category": "Soup",
     "name": "Sweet Corn Soup",
+    "shortCode": "SCS",
     "description": "Creamy soup with sweet corn kernels",
     "price": 120,
     "isVeg": true,
@@ -372,6 +409,7 @@
   {
     "category": "Main Course",
     "name": "Veg Handi",
+    "shortCode": "VH",
     "description": "Mixed vegetables in rich gravy",
     "price": 170,
     "isVeg": true,
@@ -382,6 +420,7 @@
   {
     "category": "Main Course",
     "name": "Veg Mushroom Masala",
+    "shortCode": "VMM",
     "description": "Mushrooms cooked in spicy tomato gravy",
     "price": 190,
     "isVeg": true,
@@ -392,6 +431,7 @@
   {
     "category": "Main Course",
     "name": "Methi Matar Malai",
+    "shortCode": "MMM",
     "description": "Fenugreek and peas in creamy sauce",
     "price": 160,
     "isVeg": true,
@@ -402,6 +442,7 @@
   {
     "category": "Main Course",
     "name": "Sev Tomato",
+    "shortCode": "ST",
     "description": "Crispy sev in tangy tomato curry",
     "price": 140,
     "isVeg": true,
@@ -412,6 +453,7 @@
   {
     "category": "Main Course",
     "name": "Sev Masala",
+    "shortCode": "SM",
     "description": "Sev in spicy onion tomato gravy",
     "price": 150,
     "isVeg": true,
@@ -422,6 +464,7 @@
   {
     "category": "Main Course",
     "name": "Sev Milk Curry",
+    "shortCode": "SMC",
     "description": "Crispy sev in creamy milk curry",
     "price": 140,
     "isVeg": true,
@@ -432,6 +475,7 @@
   {
     "category": "Main Course",
     "name": "Chana Masala",
+    "shortCode": "CM",
     "description": "Chickpeas in aromatic spiced gravy",
     "price": 130,
     "isVeg": true,
@@ -442,6 +486,7 @@
   {
     "category": "Main Course",
     "name": "Baingan Bharta",
+    "shortCode": "BB",
     "description": "Smoky roasted eggplant mash",
     "price": 130,
     "isVeg": true,
@@ -452,6 +497,7 @@
   {
     "category": "Main Course",
     "name": "Aloo Matar",
+    "shortCode": "AM",
     "description": "Potatoes and peas in tomato gravy",
     "price": 130,
     "isVeg": true,
@@ -462,6 +508,7 @@
   {
     "category": "Main Course",
     "name": "Jeera Aloo",
+    "shortCode": "JA",
     "description": "Cumin flavored baby potatoes",
     "price": 140,
     "isVeg": true,
@@ -472,6 +519,7 @@
   {
     "category": "Main Course",
     "name": "Aloo Gobi",
+    "shortCode": "AG",
     "description": "Potatoes and cauliflower dry curry",
     "price": 130,
     "isVeg": true,
@@ -482,6 +530,7 @@
   {
     "category": "Main Course",
     "name": "Bhendi Fry",
+    "shortCode": "BF",
     "description": "Crispy fried okra with spices",
     "price": 140,
     "isVeg": true,
@@ -492,6 +541,7 @@
   {
     "category": "Main Course",
     "name": "Bhendi Masala",
+    "shortCode": "BM",
     "description": "Okra cooked in spicy gravy",
     "price": 130,
     "isVeg": true,
@@ -502,6 +552,7 @@
   {
     "category": "Main Course",
     "name": "Matki Masala",
+    "shortCode": "MM",
     "description": "Moth beans in spicy curry",
     "price": 130,
     "isVeg": true,
@@ -512,6 +563,7 @@
   {
     "category": "Main Course",
     "name": "Veg Jaipuri",
+    "shortCode": "VJ",
     "description": "Vegetables in Rajasthani style gravy",
     "price": 160,
     "isVeg": true,
@@ -522,6 +574,7 @@
   {
     "category": "Main Course",
     "name": "Veg Maharaja",
+    "shortCode": "VM",
     "description": "Royal mixed vegetables in rich gravy",
     "price": 190,
     "isVeg": true,
@@ -532,6 +585,7 @@
   {
     "category": "Main Course",
     "name": "Mix Veg",
+    "shortCode": "MV",
     "description": "Assorted vegetables in curry",
     "price": 150,
     "isVeg": true,
@@ -542,6 +596,7 @@
   {
     "category": "Main Course",
     "name": "Veg Kolhapuri",
+    "shortCode": "VK",
     "description": "Spicy vegetables in Kolhapuri masala",
     "price": 180,
     "isVeg": true,
@@ -552,6 +607,7 @@
   {
     "category": "Main Course",
     "name": "Veg Hungama",
+    "shortCode": "VH",
     "description": "Mix vegetables in thick gravy",
     "price": 180,
     "isVeg": true,
@@ -562,6 +618,7 @@
   {
     "category": "Main Course",
     "name": "Veg Toofani",
+    "shortCode": "VT",
     "description": "Spicy mixed vegetables curry",
     "price": 180,
     "isVeg": true,
@@ -572,6 +629,7 @@
   {
     "category": "Main Course",
     "name": "Veg Harabhara",
+    "shortCode": "VH",
     "description": "Green vegetables in spinach gravy",
     "price": 180,
     "isVeg": true,
@@ -582,6 +640,7 @@
   {
     "category": "Main Course",
     "name": "Soyabean Vadi",
+    "shortCode": "SV",
     "description": "Soya nuggets in spicy gravy",
     "price": 150,
     "isVeg": true,
@@ -592,6 +651,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Matka",
+    "shortCode": "PM",
     "description": "Paneer cooked in special clay pot gravy",
     "price": 270,
     "isVeg": true,
@@ -602,6 +662,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Mushroom",
+    "shortCode": "PM",
     "description": "Paneer and mushroom in creamy gravy",
     "price": 250,
     "isVeg": true,
@@ -612,6 +673,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Angara",
+    "shortCode": "PA",
     "description": "Spicy charcoal grilled paneer curry",
     "price": 250,
     "isVeg": true,
@@ -622,6 +684,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Rajwadi",
+    "shortCode": "PR",
     "description": "Royal style paneer in rich cashew gravy",
     "price": 250,
     "isVeg": true,
@@ -632,6 +695,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Butter Masala",
+    "shortCode": "PBM",
     "description": "Creamy tomato gravy with soft paneer cubes",
     "price": 200,
     "isVeg": true,
@@ -642,6 +706,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Jaipuri",
+    "shortCode": "PJ",
     "description": "Paneer in Rajasthani style spicy curry",
     "price": 200,
     "isVeg": true,
@@ -652,6 +717,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Palak Paneer",
+    "shortCode": "PP",
     "description": "Paneer cubes in creamy spinach gravy",
     "price": 180,
     "isVeg": true,
@@ -662,6 +728,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Bhurji",
+    "shortCode": "PB",
     "description": "Scrambled paneer with onions and spices",
     "price": 180,
     "isVeg": true,
@@ -672,6 +739,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Bhurji Dry",
+    "shortCode": "PBD",
     "description": "Dry scrambled paneer with minimal gravy",
     "price": 200,
     "isVeg": true,
@@ -682,6 +750,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Toofani",
+    "shortCode": "PT",
     "description": "Extra spicy paneer in fiery gravy",
     "price": 190,
     "isVeg": true,
@@ -692,6 +761,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Lababdar",
+    "shortCode": "PL",
     "description": "Rich and creamy paneer curry",
     "price": 210,
     "isVeg": true,
@@ -702,6 +772,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Roll",
+    "shortCode": "PR",
     "description": "Paneer wrapped in crispy rolls",
     "price": 200,
     "isVeg": true,
@@ -712,6 +783,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Shahi Paneer",
+    "shortCode": "SP",
     "description": "Royal paneer in rich cashew cream sauce",
     "price": 190,
     "isVeg": true,
@@ -722,6 +794,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Pasanda",
+    "shortCode": "PP",
     "description": "Stuffed paneer slices in creamy gravy",
     "price": 210,
     "isVeg": true,
@@ -732,6 +805,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Kadai",
+    "shortCode": "PK",
     "description": "Paneer cooked with capsicum in kadai masala",
     "price": 190,
     "isVeg": true,
@@ -742,6 +816,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Handi",
+    "shortCode": "PH",
     "description": "Paneer cooked in traditional handi style",
     "price": 200,
     "isVeg": true,
@@ -752,6 +827,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Lasuniya",
+    "shortCode": "PL",
     "description": "Garlic flavored paneer curry",
     "price": 200,
     "isVeg": true,
@@ -762,6 +838,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Kolhapuri",
+    "shortCode": "PK",
     "description": "Spicy Kolhapuri style paneer curry",
     "price": 200,
     "isVeg": true,
@@ -772,6 +849,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Matar Masala",
+    "shortCode": "PMM",
     "description": "Paneer and peas in tomato gravy",
     "price": 180,
     "isVeg": true,
@@ -782,6 +860,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Patiala",
+    "shortCode": "PP",
     "description": "Paneer in Patiala style creamy gravy",
     "price": 200,
     "isVeg": true,
@@ -792,6 +871,7 @@
   {
     "category": "Paneer Specialty",
     "name": "Paneer Diwani",
+    "shortCode": "PD",
     "description": "Royal paneer in aromatic curry",
     "price": 210,
     "isVeg": true,
@@ -802,6 +882,7 @@
   {
     "category": "Vegetable",
     "name": "Vegetable Khajana",
+    "shortCode": "VK",
     "description": "Vegetable Khajana",
     "price": 190,
     "isVeg": true,
@@ -812,6 +893,7 @@
   {
     "category": "Vegetable",
     "name": "Veg Aflatun",
+    "shortCode": "VA",
     "description": "Veg Aflatun",
     "price": 180,
     "isVeg": true,
@@ -822,6 +904,7 @@
   {
     "category": "Vegetable",
     "name": "Veg jalfrezi",
+    "shortCode": "VJ",
     "description": "Veg jalfrezi",
     "price": 170,
     "isVeg": true,
@@ -832,6 +915,7 @@
   {
     "category": "Vegetable",
     "name": "Veg Patiala",
+    "shortCode": "VP",
     "description": "Veg Patiala",
     "price": 180,
     "isVeg": true,
@@ -842,6 +926,7 @@
   {
     "category": "Vegetable",
     "name": "Lasuni Methi",
+    "shortCode": "LM",
     "description": "Lasuni Methi",
     "price": 180,
     "isVeg": true,
@@ -852,6 +937,7 @@
   {
     "category": "Vegetable",
     "name": "Veg kadhai",
+    "shortCode": "VK",
     "description": "Veg kadhai",
     "price": 170,
     "isVeg": true,
@@ -862,6 +948,7 @@
   {
     "category": "Vegetable",
     "name": "Veg maratha",
+    "shortCode": "VM",
     "description": "Veg maratha",
     "price": 170,
     "isVeg": true,
@@ -872,6 +959,7 @@
   {
     "category": "Vegetable",
     "name": "Veg Tawa Masala",
+    "shortCode": "VTM",
     "description": "Veg Tawa Masala",
     "price": 170,
     "isVeg": true,
@@ -882,6 +970,7 @@
   {
     "category": "Cashew Specialty",
     "name": "Kaju Paneer",
+    "shortCode": "KP",
     "description": "Paneer in rich cashew cream sauce",
     "price": 220,
     "isVeg": true,
@@ -892,6 +981,7 @@
   {
     "category": "Cashew Specialty",
     "name": "Kaju Curry",
+    "shortCode": "KC",
     "description": "Cashews in creamy gravy",
     "price": 230,
     "isVeg": true,
@@ -902,6 +992,7 @@
   {
     "category": "Cashew Specialty",
     "name": "Soya Kaju",
+    "shortCode": "SK",
     "description": "Soya and cashew in rich gravy",
     "price": 270,
     "isVeg": true,
@@ -912,6 +1003,7 @@
   {
     "category": "Cashew Specialty",
     "name": "Kaju Masala",
+    "shortCode": "KM",
     "description": "Cashews in aromatic spiced curry",
     "price": 240,
     "isVeg": true,
@@ -922,6 +1014,7 @@
   {
     "category": "Cashew Specialty",
     "name": "Kaju Kofta Curry",
+    "shortCode": "KKC",
     "description": "Cashew kofta balls in rich gravy",
     "price": 240,
     "isVeg": true,
@@ -932,6 +1025,7 @@
   {
     "category": "Cheese Specialty",
     "name": "Cheese Butter Masala",
+    "shortCode": "CBM",
     "description": "Cheese cubes in creamy butter masala",
     "price": 230,
     "isVeg": true,
@@ -942,6 +1036,7 @@
   {
     "category": "Cheese Specialty",
     "name": "Cheese Angoori",
+    "shortCode": "CA",
     "description": "Small cheese balls in creamy gravy",
     "price": 250,
     "isVeg": true,
@@ -952,6 +1047,7 @@
   {
     "category": "Cheese Specialty",
     "name": "Cheese Paneer",
+    "shortCode": "CP",
     "description": "Cheese and paneer combo in rich gravy",
     "price": 230,
     "isVeg": true,
@@ -962,6 +1058,7 @@
   {
     "category": "Dal",
     "name": "Dal Fry",
+    "shortCode": "DF",
     "description": "Tempered yellow lentils",
     "price": 130,
     "isVeg": true,
@@ -972,6 +1069,7 @@
   {
     "category": "Dal",
     "name": "Dal Tadka",
+    "shortCode": "DT",
     "description": "Yellow lentils with cumin tempering",
     "price": 150,
     "isVeg": true,
@@ -982,6 +1080,7 @@
   {
     "category": "Dal",
     "name": "Dal Makhani",
+    "shortCode": "DM",
     "description": "Creamy black lentils slow cooked with butter",
     "price": 180,
     "isVeg": true,
@@ -992,6 +1091,7 @@
   {
     "category": "Dal",
     "name": "Dal Kolhapuri",
+    "shortCode": "DK",
     "description": "Spicy Kolhapuri style lentils",
     "price": 160,
     "isVeg": true,
@@ -1002,6 +1102,7 @@
   {
     "category": "Dal",
     "name": "Dal Palak",
+    "shortCode": "DP",
     "description": "Lentils cooked with spinach",
     "price": 140,
     "isVeg": true,
@@ -1012,6 +1113,7 @@
   {
     "category": "Dal",
     "name": "Dal Butter",
+    "shortCode": "DB",
     "description": "Lentils finished with butter",
     "price": 150,
     "isVeg": true,
@@ -1022,6 +1124,7 @@
   {
     "category": "Dal",
     "name": "Jeera Dal",
+    "shortCode": "JD",
     "description": "Simple cumin flavored lentils",
     "price": 120,
     "isVeg": true,
@@ -1032,6 +1135,7 @@
   {
     "category": "Roti",
     "name": "Tawa Roti",
+    "shortCode": "TR",
     "description": "Whole wheat flatbread cooked on tawa",
     "price": 15,
     "isVeg": true,
@@ -1042,6 +1146,7 @@
   {
     "category": "Roti",
     "name": "Tawa Butter Roti",
+    "shortCode": "TBR",
     "description": "Buttered whole wheat flatbread",
     "price": 20,
     "isVeg": true,
@@ -1052,6 +1157,7 @@
   {
     "category": "Roti",
     "name": "Tawa Paratha",
+    "shortCode": "TP",
     "description": "Layered flatbread cooked on tawa",
     "price": 25,
     "isVeg": true,
@@ -1062,6 +1168,7 @@
   {
     "category": "Roti",
     "name": "Tawa Butter Paratha",
+    "shortCode": "TBP",
     "description": "Buttered layered flatbread",
     "price": 30,
     "isVeg": true,
@@ -1072,6 +1179,7 @@
   {
     "category": "Roti",
     "name": "Tandoori Roti",
+    "shortCode": "TR",
     "description": "Clay oven baked whole wheat bread",
     "price": 20,
     "isVeg": true,
@@ -1082,6 +1190,7 @@
   {
     "category": "Roti",
     "name": "Tandoori Wheat Roti",
+    "shortCode": "TWR",
     "description": "Whole wheat tandoori bread",
     "price": 20,
     "isVeg": true,
@@ -1092,6 +1201,7 @@
   {
     "category": "Roti",
     "name": "Butter Tandoori Roti",
+    "shortCode": "BTR",
     "description": "Buttered tandoori roti",
     "price": 25,
     "isVeg": true,
@@ -1102,6 +1212,7 @@
   {
     "category": "Roti",
     "name": "Naan",
+    "shortCode": "N",
     "description": "Soft leavened bread from tandoor",
     "price": 40,
     "isVeg": true,
@@ -1112,6 +1223,7 @@
   {
     "category": "Roti",
     "name": "Butter Naan",
+    "shortCode": "BN",
     "description": "Naan brushed with butter",
     "price": 45,
     "isVeg": true,
@@ -1122,6 +1234,7 @@
   {
     "category": "Roti",
     "name": "Garlic Butter Naan",
+    "shortCode": "GBN",
     "description": "Naan topped with garlic and butter",
     "price": 50,
     "isVeg": true,
@@ -1132,6 +1245,7 @@
   {
     "category": "Roti",
     "name": "Lachha Paratha",
+    "shortCode": "LP",
     "description": "Multi-layered crispy paratha",
     "price": 45,
     "isVeg": true,
@@ -1142,6 +1256,7 @@
   {
     "category": "Roti",
     "name": "Butter Lachha Paratha",
+    "shortCode": "BLP",
     "description": "Buttered multi-layered paratha",
     "price": 50,
     "isVeg": true,
@@ -1152,6 +1267,7 @@
   {
     "category": "Roti",
     "name": "Cheese Naan",
+    "shortCode": "CN",
     "description": "Naan stuffed with cheese",
     "price": 55,
     "isVeg": true,
@@ -1162,6 +1278,7 @@
   {
     "category": "Roti",
     "name": "Aloo Paratha",
+    "shortCode": "AP",
     "description": "Paratha stuffed with spiced potato",
     "price": 60,
     "isVeg": true,
@@ -1172,6 +1289,7 @@
   {
     "category": "Roti",
     "name": "Paneer Paratha",
+    "shortCode": "PP",
     "description": "Paratha stuffed with paneer",
     "price": 80,
     "isVeg": true,
@@ -1182,6 +1300,7 @@
   {
     "category": "Rice",
     "name": "Plain Rice",
+    "shortCode": "PR",
     "description": "Steamed basmati rice",
     "price": 110,
     "isVeg": true,
@@ -1192,6 +1311,7 @@
   {
     "category": "Rice",
     "name": "Jeera Rice",
+    "shortCode": "JR",
     "description": "Basmati rice flavored with cumin",
     "price": 120,
     "isVeg": true,
@@ -1202,6 +1322,7 @@
   {
     "category": "Rice",
     "name": "Veg Biryani",
+    "shortCode": "VB",
     "description": "Aromatic rice with mixed vegetables",
     "price": 180,
     "isVeg": true,
@@ -1212,6 +1333,7 @@
   {
     "category": "Rice",
     "name": "Hyderabadi Biryani",
+    "shortCode": "HB",
     "description": "Hyderabadi style vegetable biryani",
     "price": 190,
     "isVeg": true,
@@ -1222,6 +1344,7 @@
   {
     "category": "Rice",
     "name": "Veg Pulao",
+    "shortCode": "VP",
     "description": "Mildly spiced rice with vegetables",
     "price": 150,
     "isVeg": true,
@@ -1232,6 +1355,7 @@
   {
     "category": "Rice",
     "name": "Kaju Pulao",
+    "shortCode": "KP",
     "description": "Pulao with cashews and vegetables",
     "price": 220,
     "isVeg": true,
@@ -1242,6 +1366,7 @@
   {
     "category": "Rice",
     "name": "Curd Rice",
+    "shortCode": "CR",
     "description": "Rice mixed with seasoned yogurt",
     "price": 120,
     "isVeg": true,
@@ -1252,6 +1377,7 @@
   {
     "category": "Rice",
     "name": "Dal Khichdi",
+    "shortCode": "DK",
     "description": "Comfort food of rice and lentils",
     "price": 160,
     "isVeg": true,
@@ -1262,6 +1388,7 @@
   {
     "category": "Rice",
     "name": "Fried Rice",
+    "shortCode": "FR",
     "description": "Fried Rice",
     "price": 150,
     "isVeg": true,
@@ -1272,6 +1399,7 @@
   {
     "category": "Rice",
     "name": "Plain Rice Half",
+    "shortCode": "PRH",
     "description": "Plain Rice Half",
     "price": 70,
     "isVeg": true,
@@ -1282,6 +1410,7 @@
   {
     "category": "Rice",
     "name": "Jeera Rice Half",
+    "shortCode": "JRH",
     "description": "Jeera Rice Half",
     "price": 80,
     "isVeg": true,
@@ -1292,6 +1421,7 @@
   {
     "category": "Rice",
     "name": "Dam Biryani",
+    "shortCode": "DB",
     "description": "Dam Biryani",
     "price": 240,
     "isVeg": true,
@@ -1302,6 +1432,7 @@
   {
     "category": "Rice",
     "name": "Namdev Rice",
+    "shortCode": "NR",
     "description": "Namdev Rice",
     "price": 170,
     "isVeg": true,
@@ -1312,6 +1443,7 @@
   {
     "category": "Rice",
     "name": "Veg Fried Rice",
+    "shortCode": "VFR",
     "description": "Veg Fried Rice",
     "price": 180,
     "isVeg": true,
@@ -1322,6 +1454,7 @@
   {
     "category": "Rice",
     "name": "Veg schezwan Rice",
+    "shortCode": "VSR",
     "description": "Veg schezwan Rice",
     "price": 190,
     "isVeg": true,
@@ -1332,6 +1465,7 @@
   {
     "category": "Rice",
     "name": "Kashmiri Pulao",
+    "shortCode": "KP",
     "description": "Kashmiri Pulao",
     "price": 190,
     "isVeg": true,
@@ -1342,6 +1476,7 @@
   {
     "category": "Rice",
     "name": "Masala Rice",
+    "shortCode": "MR",
     "description": "Masala Rice",
     "price": 190,
     "isVeg": true,
@@ -1352,6 +1487,7 @@
   {
     "category": "Sweet",
     "name": "Gulab Jamun (2 pcs)",
+    "shortCode": "GJ",
     "description": "Deep fried milk balls in sugar syrup",
     "price": 40,
     "isVeg": true,
@@ -1362,6 +1498,7 @@
   {
     "category": "Sweet",
     "name": "Rasgulla (2 pcs)",
+    "shortCode": "R",
     "description": "Soft cottage cheese balls in syrup",
     "price": 40,
     "isVeg": true,
@@ -1372,6 +1509,7 @@
   {
     "category": "Sweet",
     "name": "Ice Cream",
+    "shortCode": "IC",
     "description": "Creamy frozen dessert",
     "price": 50,
     "isVeg": true,
@@ -1382,6 +1520,7 @@
   {
     "category": "Thali Special",
     "name": "Veg Thali (2 sabji + dal + chaval + 4 roti + mithai + papad + chach)",
+    "shortCode": "VT",
     "description": "Veg Thali",
     "price": 200,
     "isVeg": true,
@@ -1392,6 +1531,7 @@
   {
     "category": "Thali Special",
     "name": "Rajasthani Thali",
+    "shortCode": "RT",
     "description": "Veg Thali",
     "price": 300,
     "isVeg": true,
@@ -1402,6 +1542,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Paneer Varhadi",
+    "shortCode": "PV",
     "description": "Paneer Varhadi",
     "price": 180,
     "isVeg": true,
@@ -1412,6 +1553,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Paneer Masala",
+    "shortCode": "PM",
     "description": "Paneer Masala",
     "price": 190,
     "isVeg": true,
@@ -1422,6 +1564,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Mashroom Varhadi",
+    "shortCode": "MV",
     "description": "Mashroom Varhadi",
     "price": 180,
     "isVeg": true,
@@ -1432,6 +1575,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Mashroom Masala",
+    "shortCode": "MM",
     "description": "Mashroom Masala",
     "price": 190,
     "isVeg": true,
@@ -1442,6 +1586,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Sev Bhaji",
+    "shortCode": "SB",
     "description": "Sev Bhaji",
     "price": 170,
     "isVeg": true,
@@ -1452,6 +1597,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Veg Egg Curry",
+    "shortCode": "VEC",
     "description": "Veg Egg Curry",
     "price": 200,
     "isVeg": true,
@@ -1462,6 +1608,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Kaju Paneer mashroom",
+    "shortCode": "KPM",
     "description": "Kaju Paneer mashroom",
     "price": 210,
     "isVeg": true,
@@ -1472,6 +1619,7 @@
   {
     "category": "Varhadi Rassa",
     "name": "Patodi Bhaji",
+    "shortCode": "PB",
     "description": "Patodi Bhaji",
     "price": 170,
     "isVeg": true,
@@ -1482,6 +1630,7 @@
   {
     "category": "Paneer ka Swad",
     "name": "Paneer chatpata",
+    "shortCode": "PC",
     "description": "Paneer chatpata",
     "price": 210,
     "isVeg": true,
@@ -1492,6 +1641,7 @@
   {
     "category": "Paneer ka Swad",
     "name": "Paneer Lazeez",
+    "shortCode": "PL",
     "description": "Paneer Lazeez",
     "price": 210,
     "isVeg": true,
@@ -1502,6 +1652,7 @@
   {
     "category": "Paneer ka Swad",
     "name": "Paneer Hydrabadi",
+    "shortCode": "PH",
     "description": "Paneer Hydrabadi",
     "price": 230,
     "isVeg": true,
@@ -1512,6 +1663,7 @@
   {
     "category": "Paneer ka Swad",
     "name": "Paneer Mumtaz",
+    "shortCode": "PM",
     "description": "Paneer Mumtaz",
     "price": 210,
     "isVeg": true,
@@ -1522,6 +1674,7 @@
   {
     "category": "Paneer ka Swad",
     "name": "Paneer Mirch Masala",
+    "shortCode": "PMM",
     "description": "Paneer Mirch Masala",
     "price": 230,
     "isVeg": true,
@@ -1532,6 +1685,7 @@
   {
     "category": "Paneer ka Swad",
     "name": "Paneer Tawa Masala",
+    "shortCode": "PTM",
     "description": "Paneer Tawa Masala",
     "price": 240,
     "isVeg": true,
@@ -1542,6 +1696,7 @@
   {
     "category": "Kofta",
     "name": "Malai Kofta",
+    "shortCode": "MK",
     "description": "Malai Kofta",
     "price": 210,
     "isVeg": true,
@@ -1552,6 +1707,7 @@
   {
     "category": "Kofta",
     "name": "Veg Kofta",
+    "shortCode": "VK",
     "description": "Veg Kofta",
     "price": 180,
     "isVeg": true,
@@ -1562,6 +1718,7 @@
   {
     "category": "Kofta",
     "name": "Paneer Kofta",
+    "shortCode": "PK",
     "description": "Paneer Kofta",
     "price": 200,
     "isVeg": true,
@@ -1572,6 +1729,7 @@
   {
     "category": "Kofta",
     "name": "Nargisi Kofta",
+    "shortCode": "NK",
     "description": "Nargisi Kofta",
     "price": 200,
     "isVeg": true,

@@ -31,7 +31,7 @@ public interface CompleteOrderRepository extends MongoRepository<CompletedOrder,
     // In CompleteOrderRepository.java
 
     @Query(value = "{ 'hotelId' : ?0 }",
-            fields = "{ 'id':1, 'customerName':1, 'customerMobile':1, 'checkoutAt':1, 'grandTotal':1, 'orderType':1 }")
+            fields = "{ 'id':1, 'customerName':1, 'customerMobile':1, 'checkoutAt':1, 'totalPayable':1, 'orderType':1 }")
     Page<CompletedOrder> findByHotelId(String hotelId, Pageable pageable);
 
     // --- NEW: Search API (Search by Name OR Mobile) ---

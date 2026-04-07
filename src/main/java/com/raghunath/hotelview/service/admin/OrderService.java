@@ -186,53 +186,54 @@ public class OrderService {
 
     @Transactional
     public String checkoutOrders(String hotelId, CheckoutRequest request) {
-        // 1. Fetch active orders from the kitchen collection
+        // 1. Fetch active orders
         List<KitchenOrder> activeOrders = kitchenOrderRepository.findAllById(request.getOrderIds());
         if (activeOrders.isEmpty()) {
-            throw new RuntimeException("No active orders found to checkout for these IDs");
+            throw new RuntimeException("No active orders found");
         }
 
-        // 2. Calculate grand total and get current Indian Standard Time
+        // 2. Calculation Logic
         Double grandTotal = activeOrders.stream().mapToDouble(KitchenOrder::getTotalAmount).sum();
+
+        // Get discount from request (default to 0 if null)
+        Double discountPercent = (request.getDiscount() != null) ? request.getDiscount() : 0.0;
+        Double discountAmount = (grandTotal * discountPercent) / 100;
+        Double totalPayable = grandTotal - discountAmount;
+
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-        // 3. Build the Archive Document (CompletedOrder) for long-term history
+        // 3. Build the Archive Document
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType(activeOrders.get(0).getOrderType())
-
-                // Handling Optional Fields with Defaults
-                // This version catches NULL, "" (empty), and " " (just a space)
                 .customerName(StringUtils.hasText(request.getCustomerName()) ? request.getCustomerName() : "Walk-in Guest")
                 .customerMobile(StringUtils.hasText(request.getCustomerMobile()) ? request.getCustomerMobile() : "0000000000")
                 .customerAddress(StringUtils.hasText(request.getCustomerAddress()) ? request.getCustomerAddress() : "N/A")
 
+                // New Fields for Pricing
                 .allOrders(activeOrders)
                 .grandTotal(grandTotal)
+                .discountPercent(discountPercent)
+                .discountAmount(discountAmount)
+                .totalPayable(totalPayable)
+
                 .paymentStatus("PAID")
                 .checkoutAt(nowIST.toLocalDateTime())
                 .checkoutDate(nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE))
                 .checkoutTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
                 .build();
 
-        // 4. Save to the completed_orders collection
+        // 4. Save and Cleanup
         CompletedOrder savedBill = completeOrderRepository.save(finalBill);
-
-        // 5. ATOMIC CLEANUP: Only clear kitchen and reset table if save was successful
         if (savedBill.getId() != null) {
             kitchenOrderRepository.deleteAll(activeOrders);
-
             Integer tableNum = activeOrders.get(0).getTableNumber();
-            String orderType = activeOrders.get(0).getOrderType();
-
-            if ("TABLE".equalsIgnoreCase(orderType) && tableNum != null) {
+            if ("TABLE".equalsIgnoreCase(activeOrders.get(0).getOrderType()) && tableNum != null) {
                 updateTableVisualStatus(hotelId, tableNum, "INACTIVE");
                 updateTableBill(hotelId, tableNum, 0.0, true);
-                log.info("CHECKOUT_COMPLETE: Hotel {} Table {} is now free and bill is reset.", hotelId, tableNum);
             }
         }
 
-        // Return the MongoDB ID of the completed order instead of "Success"
         return savedBill.getId();
     }
     // --- API 1: Paged Fetch (5 at a time) ---
@@ -287,7 +288,14 @@ public class OrderService {
                 .time(order.getCheckoutTime())
                 .orderType(order.getOrderType())
                 .items(flattenedItems)
+
+                // --- NEW PRICING MAPPING ---
                 .grandTotal(order.getGrandTotal())
+                .discountPercent(order.getDiscountPercent())
+                .discountAmount(order.getDiscountAmount())
+                .totalPayable(order.getTotalPayable())
+                // ---------------------------
+
                 .customerName(order.getCustomerName())
                 .customerMobile(order.getCustomerMobile())
                 .customerAddress(order.getCustomerAddress())
