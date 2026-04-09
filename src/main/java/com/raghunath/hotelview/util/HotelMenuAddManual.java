@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class HotelMenuAddManual implements CommandLineRunner {
 
     private final boolean RUN_STRESS_TEST = false;
-    private final String URL = "https://hotelview-production.up.railway.app/api/v1/menu/add";
+    private final String URL = "http://localhost:8080/api/v1/menu/add";
 
     // PASTE YOUR TOKEN HERE
-    private final String ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQURNSU4iLCJob3RlbElkIjoiaG90ZWwwMDEiLCJzdWIiOiJob3RlbDAwMSIsImlhdCI6MTc3NTU1NDU0MCwiZXhwIjoxNzc1NTU1NDQwfQ.jp6T-NmotHWBS8upyLxsDntJR0cNCY3swuX2pruyhHA";
+    private final String ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJob3RlbElkIjoiaG90ZWwwMDEiLCJyb2xlIjoiQURNSU4iLCJzdWIiOiJob3RlbDAwMSIsImlhdCI6MTc3NTc0NDIzMiwiZXhwIjoxNzc1NzQ1MTMyfQ.wlpwTlKXenhSHK-0dQgi6zq-AWX9JA2ARR_QE5ngcW8";
 
     @Override
     public void run(String... args) throws Exception {

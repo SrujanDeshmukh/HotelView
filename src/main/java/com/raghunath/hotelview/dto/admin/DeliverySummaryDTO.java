@@ -11,6 +11,6 @@ public class DeliverySummaryDTO {
     private String orderType;
     private String customerName;
     private String customerMobile;
-    private Double grandTotal;
+    private Double totalPayable;
     private LocalDateTime checkoutAt;
 }

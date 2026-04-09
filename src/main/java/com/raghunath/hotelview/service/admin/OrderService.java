@@ -237,9 +237,21 @@ public class OrderService {
         return savedBill.getId();
     }
     // --- API 1: Paged Fetch (5 at a time) ---
-    public Page<CompletedOrder> getCompletedOrdersPaged(String hotelId, int pageNumber) {
+    public Page<DeliverySummaryDTO> getCompletedOrdersPaged(String hotelId, int pageNumber) {
         Pageable pageable = PageRequest.of(pageNumber, 10, Sort.by("checkoutAt").descending());
-        return completeOrderRepository.findByHotelId(hotelId, pageable);
+
+        // 1. Fetch the Entity Page
+        Page<CompletedOrder> entities = completeOrderRepository.findByHotelId(hotelId, pageable);
+
+        // 2. Map Entities to DeliverySummaryDTO
+        return entities.map(order -> DeliverySummaryDTO.builder()
+                .id(order.getId())
+                .orderType(order.getOrderType())
+                .customerName(order.getCustomerName())
+                .customerMobile(order.getCustomerMobile())
+                .totalPayable(order.getTotalPayable()) // 👈 Map the correct field here
+                .checkoutAt(order.getCheckoutAt())
+                .build());
     }
 
     // --- API 2: Full Detail by ID ---
@@ -331,7 +343,7 @@ public class OrderService {
                         .orderType(order.getOrderType())
                         .customerName(order.getCustomerName())
                         .customerMobile(order.getCustomerMobile())
-                        .grandTotal(order.getGrandTotal())
+                        .totalPayable(order.getTotalPayable())
                         .checkoutAt(order.getCheckoutAt())
                         .build())
                 .collect(Collectors.toList());

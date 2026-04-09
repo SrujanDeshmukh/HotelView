@@ -23,10 +23,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class HotelTableAddManual implements CommandLineRunner {
 
     private final boolean RUN_TABLE_INIT = false;
-    private final String URL = "https://hotelview.onrender.com/api/v1/tables/add";
+    private final String URL = "https://hotelview-production.up.railway.app/api/v1/tables/add";
 
     // PASTE YOUR FRESH TOKEN HERE
-    private final String ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQURNSU4iLCJob3RlbElkIjoiaG90ZWwwMDEiLCJzdWIiOiJob3RlbDAwMSIsImlhdCI6MTc3NDQ0NDQ1OSwiZXhwIjoxNzc0NDQ4MDU5fQ.SahmZcKraAVWpQM5nrIVWq3gnoNWy8a5WCTkhobuC4A";
+    private final String ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQURNSU4iLCJob3RlbElkIjoiaG90ZWwwMDIiLCJzdWIiOiJob3RlbDAwMiIsImlhdCI6MTc3NTc0MTA5NCwiZXhwIjoxNzc1NzQxOTk0fQ.uM6pmQCWkOHZpvBw0hbbOs_qFu8CUs_6Lz9HvP2jCBU";
 
     @Override
     public void run(String... args) throws Exception {

@@ -23,7 +23,7 @@ public class CompletedOrderController {
      * API 1: Paged Summary List (Archive)
      */
     @GetMapping("/list")
-    public ResponseEntity<Page<CompletedOrder>> getCompletedList(
+    public ResponseEntity<Page<DeliverySummaryDTO>> getCompletedList(
             @RequestParam(defaultValue = "0") int page) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(orderService.getCompletedOrdersPaged(hotelId, page));
