@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +42,9 @@ public class OrderService {
     private final KitchenOrderRepository kitchenOrderRepository;
     private final MongoTemplate mongoTemplate;
     private final CompleteOrderRepository completeOrderRepository;
+    private final SalesAggregationRepository salesAggregationRepository;
+
+    private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
     /**
      * 1. SAVE DRAFT: Waiter/Admin adds items.
      * Since the waiter has full access, this updates the live table total immediately.
@@ -61,7 +66,7 @@ public class OrderService {
     }
 
     private ZonedDateTime getISTNow() {
-        return ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        return ZonedDateTime.now(IST);
     }
 
     private void validateTableExists(String hotelId, int tableNumber) {
@@ -381,7 +386,8 @@ public class OrderService {
         // 3. Financial Aggregation (Sales till now)
         Double todaySalesRupees = 0.0;
         try {
-            Double result = completeOrderRepository.sumGrandTotalByHotelIdAndCheckoutDate(hotelId, todayDate);
+            // CHANGED: Using the method that sums totalPayable instead of grandTotal
+            Double result = completeOrderRepository.sumTotalPayableByHotelIdAndCheckoutDate(hotelId, todayDate);
             todaySalesRupees = (result != null) ? result : 0.0;
         } catch (Exception e) {
             log.error("AGGREGATION_ERROR: Sales sum failed for hotel {}", hotelId);
@@ -413,5 +419,43 @@ public class OrderService {
             tableRepository.save(table);
             log.info("BILL_SYNC: Hotel {} Table {} updated to {}", hotelId, tableNumber, table.getCurrentBill());
         });
+    }
+
+    // ✅ CHANGED: Now uses getTodayAnalytics
+    public SalesAnalyticsDTO getTodayHourlySales(String hotelId) {
+        return salesAggregationRepository.getTodayAnalytics(hotelId);
+    }
+
+    // ✅ UNCHANGED
+    public SalesAnalyticsDTO getCurrentWeekSales(String hotelId) {
+        ZonedDateTime nowIST = getISTNow();
+        Instant start = nowIST.with(java.time.DayOfWeek.MONDAY)
+                .toLocalDate()
+                .atStartOfDay(IST)
+                .toInstant();
+        Instant end = nowIST.toInstant();
+        return salesAggregationRepository.getSalesAnalytics(hotelId, start, end, "dayOfWeek");
+    }
+
+    // ✅ UNCHANGED
+    public SalesAnalyticsDTO getCurrentMonthSales(String hotelId) {
+        ZonedDateTime nowIST = getISTNow();
+        Instant start = nowIST.withDayOfMonth(1)
+                .toLocalDate()
+                .atStartOfDay(IST)
+                .toInstant();
+        Instant end = nowIST.toInstant();
+        return salesAggregationRepository.getSalesAnalytics(hotelId, start, end, "dayOfMonth");
+    }
+
+    // ✅ UNCHANGED
+    public SalesAnalyticsDTO getCurrentYearSales(String hotelId) {
+        ZonedDateTime nowIST = getISTNow();
+        Instant start = nowIST.withDayOfYear(1)
+                .toLocalDate()
+                .atStartOfDay(IST)
+                .toInstant();
+        Instant end = nowIST.toInstant();
+        return salesAggregationRepository.getSalesAnalytics(hotelId, start, end, "month");
     }
 }

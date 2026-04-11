@@ -30,7 +30,7 @@ public class MenuItemController {
         return ResponseEntity.ok(menuItemService.getMenuMetadata(getHotelId()));
     }
 
-    
+
     @GetMapping("/updates")
     public ResponseEntity<List<MenuItem>> getMenuUpdates(@RequestParam long lastSync) {
         return ResponseEntity.ok(menuItemService.getChangedItems(getHotelId(), lastSync));

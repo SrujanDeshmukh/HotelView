@@ -37,4 +37,12 @@ public interface CompleteOrderRepository extends MongoRepository<CompletedOrder,
     // --- NEW: Search API (Search by Name OR Mobile) ---
     @Query(value = "{ 'hotelId': ?0, $or: [ { 'customerName': { $regex: ?1, $options: 'i' } }, { 'customerMobile': { $regex: ?1 } } ] }")
     List<CompletedOrder> searchOrders(String hotelId, String searchString);
+
+    // Inside CompleteOrderRepository.java
+
+    @Aggregation(pipeline = {
+            "{ '$match': { 'hotelId' : ?0, 'checkoutDate' : ?1 } }",
+            "{ '$group': { '_id': null, 'total': { '$sum': '$totalPayable' } } }"
+    })
+    Double sumTotalPayableByHotelIdAndCheckoutDate(String hotelId, String checkoutDate);
 }
