@@ -65,9 +65,6 @@ public class OrderService {
         draftRepository.save(draft);
     }
 
-    private ZonedDateTime getISTNow() {
-        return ZonedDateTime.now(IST);
-    }
 
     private void validateTableExists(String hotelId, int tableNumber) {
         if (!tableRepository.existsByHotelIdAndTableNumber(hotelId, tableNumber)) {
@@ -366,11 +363,13 @@ public class OrderService {
 
         // 2. Fetch Metrics
 
-        // UPDATE: Total tables currently occupied (everything NOT INACTIVE)
-        Long occupiedTables = tableRepository.countByHotelIdAndStatusNot(hotelId, "INACTIVE");
+        // FIX 1: Active Tables (Sum of PENDING, ACCEPTED, and ACTIVE statuses)
+        // Production Note: Using a List of statuses is more accurate than just "NOT INACTIVE"
+        List<String> activeStatuses = List.of("PENDING", "ACCEPTED", "ACTIVE");
+        Long activeTablesCount = tableRepository.countByHotelIdAndStatusIn(hotelId, activeStatuses);
 
-        // UPDATE: Total Home Delivery volume for today (Total Today)
-        Long totalHomeDeliveriesToday = kitchenOrderRepository.countByHotelIdAndOrderTypeAndCreatedDate(
+        // FIX 2: Home Delivery Count (Pulling from COMPLETED orders for today)
+        Long homeDeliveriesToday = completeOrderRepository.countByHotelIdAndOrderTypeAndCheckoutDate(
                 hotelId, "HOME_DELIVERY", todayDate);
 
         // Employee Stats: Count all active employees
@@ -379,14 +378,13 @@ public class OrderService {
         // Menu Item Stats: Count all items for this hotel
         Long totalItems = menuItemRepository.countByHotelId(hotelId);
 
-        // Completed Orders Today count
+        // Completed Orders Today count (Total Bills issued today)
         Long completedTodayCount = completeOrderRepository.countByHotelIdAndCheckoutDate(
                 hotelId, todayDate);
 
-        // 3. Financial Aggregation (Sales till now)
+        // 3. Financial Aggregation (Actual Revenue after discount)
         Double todaySalesRupees = 0.0;
         try {
-            // CHANGED: Using the method that sums totalPayable instead of grandTotal
             Double result = completeOrderRepository.sumTotalPayableByHotelIdAndCheckoutDate(hotelId, todayDate);
             todaySalesRupees = (result != null) ? result : 0.0;
         } catch (Exception e) {
@@ -396,8 +394,8 @@ public class OrderService {
 
         // 4. Build and return the consolidated DTO
         return DashboardStatsDTO.builder()
-                .activeTablesCount(occupiedTables)
-                .pendingHomeDeliveriesCount(totalHomeDeliveriesToday) // UI Heading: "Total Today"
+                .activeTablesCount(activeTablesCount) // Now shows sum of Active/Pending/Accepted
+                .pendingHomeDeliveriesCount(homeDeliveriesToday) // Now shows Total Completed Deliveries Today
                 .completedOrdersTodayCount(completedTodayCount)
                 .employeeOnlineCount(employeeCount)
                 .totalItemsCount(totalItems)
@@ -421,41 +419,23 @@ public class OrderService {
         });
     }
 
-    // ✅ CHANGED: Now uses getTodayAnalytics
+    private ZonedDateTime getISTNow() {
+        return ZonedDateTime.now(IST);
+    }
+
     public SalesAnalyticsDTO getTodayHourlySales(String hotelId) {
         return salesAggregationRepository.getTodayAnalytics(hotelId);
     }
 
-    // ✅ UNCHANGED
     public SalesAnalyticsDTO getCurrentWeekSales(String hotelId) {
-        ZonedDateTime nowIST = getISTNow();
-        Instant start = nowIST.with(java.time.DayOfWeek.MONDAY)
-                .toLocalDate()
-                .atStartOfDay(IST)
-                .toInstant();
-        Instant end = nowIST.toInstant();
-        return salesAggregationRepository.getSalesAnalytics(hotelId, start, end, "dayOfWeek");
+        return salesAggregationRepository.getWeekAnalytics(hotelId);
     }
 
-    // ✅ UNCHANGED
     public SalesAnalyticsDTO getCurrentMonthSales(String hotelId) {
-        ZonedDateTime nowIST = getISTNow();
-        Instant start = nowIST.withDayOfMonth(1)
-                .toLocalDate()
-                .atStartOfDay(IST)
-                .toInstant();
-        Instant end = nowIST.toInstant();
-        return salesAggregationRepository.getSalesAnalytics(hotelId, start, end, "dayOfMonth");
+        return salesAggregationRepository.getMonthAnalytics(hotelId);
     }
 
-    // ✅ UNCHANGED
     public SalesAnalyticsDTO getCurrentYearSales(String hotelId) {
-        ZonedDateTime nowIST = getISTNow();
-        Instant start = nowIST.withDayOfYear(1)
-                .toLocalDate()
-                .atStartOfDay(IST)
-                .toInstant();
-        Instant end = nowIST.toInstant();
-        return salesAggregationRepository.getSalesAnalytics(hotelId, start, end, "month");
+        return salesAggregationRepository.getYearAnalytics(hotelId);
     }
 }

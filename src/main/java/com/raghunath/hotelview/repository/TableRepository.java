@@ -19,4 +19,6 @@ public interface TableRepository extends MongoRepository<RestaurantTable, String
     Long countByHotelIdAndStatus(String hotelId, String status);
     // Uses 'Not' to exclude a specific status
     Long countByHotelIdAndStatusNot(String hotelId, String status);
+
+    Long countByHotelIdAndStatusIn(String hotelId, List<String> statuses);
 }

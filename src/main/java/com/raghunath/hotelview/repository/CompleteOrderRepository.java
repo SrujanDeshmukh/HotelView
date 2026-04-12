@@ -40,6 +40,9 @@ public interface CompleteOrderRepository extends MongoRepository<CompletedOrder,
 
     // Inside CompleteOrderRepository.java
 
+
+    Long countByHotelIdAndOrderTypeAndCheckoutDate(String hotelId, String orderType, String checkoutDate);
+
     @Aggregation(pipeline = {
             "{ '$match': { 'hotelId' : ?0, 'checkoutDate' : ?1 } }",
             "{ '$group': { '_id': null, 'total': { '$sum': '$totalPayable' } } }"
