@@ -66,14 +66,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/refresh-token", "/api/v1/employees/refresh-token").permitAll()
 
                         // 2. Staff Management (Admin Only)
-                        .requestMatchers("/api/v1/employees/register", "/api/v1/employees/list").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/employees/register","/api/v1/tables/**", "/api/v1/employees/list").hasRole("ADMIN")
 
                         // 3. Kitchen Operations: Waiters can VIEW, but only CHEF/ADMIN can UPDATE
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/kitchen/**").hasAnyRole("WAITER", "CHEF", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/orders/kitchen/**").hasAnyRole("CHEF", "ADMIN")
 
                         // 4. Order Operations: Waiters and Admins
-                        .requestMatchers("/api/v1/orders/draft/**", "api/v1/menu/version", "/api/v1/orders/completed/**", "/api/v1/orders/completed/delivery/today", "/api/v1/orders/dashboard/stats", "/api/v1/orders/confirm/**", "/api/v1/orders/table/**", "/api/v1/orders/checkout").hasAnyRole("WAITER", "ADMIN")
+                        .requestMatchers("/api/v1/orders/draft/**", "api/v1/menu/version", "/api/v1/tables", "/api/v1/orders/completed/**", "/api/v1/orders/completed/delivery/today", "/api/v1/orders/dashboard/stats", "/api/v1/orders/confirm/**", "/api/v1/orders/table/**", "/api/v1/orders/checkout").hasAnyRole("WAITER", "ADMIN")
 
                         // 5. Logout (Requires valid Access Token to identify WHO is logging out)
                         .requestMatchers("/api/v1/admin/logout", "/api/v1/employees/logout").authenticated()
