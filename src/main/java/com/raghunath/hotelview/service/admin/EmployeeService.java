@@ -105,6 +105,47 @@ public class EmployeeService {
         );
     }
 
+    public String updateEmployee(String empId, String hotelId, Employee details) {
+        Employee existingEmp = employeeRepository.findById(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        // Security Check: Ensure employee belongs to the admin's hotel
+        if (!existingEmp.getHotelId().equals(hotelId)) {
+            throw new RuntimeException("Unauthorized to update this employee");
+        }
+
+        // Update basic fields
+        if (details.getName() != null) existingEmp.setName(details.getName());
+        if (details.getRole() != null) existingEmp.setRole(details.getRole());
+        existingEmp.setActive(details.isActive());
+
+        if (details.getMaxLogins() > 0) {
+            existingEmp.setMaxLogins(details.getMaxLogins());
+        }
+
+        // Handle Password Update (if provided)
+        if (details.getPassword() != null && !details.getPassword().isEmpty()) {
+            existingEmp.setPassword(passwordEncoder.encode(details.getPassword()));
+        }
+
+        employeeRepository.save(existingEmp);
+        return "Employee " + existingEmp.getName() + " updated successfully";
+    }
+
+    public void deleteEmployee(String empId, String hotelId) {
+        Employee emp = employeeRepository.findById(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        if (!emp.getHotelId().equals(hotelId)) {
+            throw new RuntimeException("Unauthorized to delete this employee");
+        }
+
+        // Remove all active refresh tokens (force logout everywhere)
+        employeeRefreshTokenRepository.deleteByUserId(empId);
+
+        employeeRepository.delete(emp);
+    }
+
     public void logoutEmployee(String empId, String refreshToken) {
         employeeRefreshTokenRepository.deleteByToken(refreshToken.trim());
     }

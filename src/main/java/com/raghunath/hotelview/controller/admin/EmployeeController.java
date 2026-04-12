@@ -48,6 +48,23 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.refreshEmployeeToken(request.get("refreshToken")));
     }
 
+    // ADMIN ONLY: Update staff details
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> updateEmployee(@PathVariable String id, @RequestBody Employee employee) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(employeeService.updateEmployee(id, hotelId, employee));
+    }
+
+    // ADMIN ONLY: Delete staff member
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteEmployee(@PathVariable String id) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        employeeService.deleteEmployee(id, hotelId);
+        return ResponseEntity.ok("Employee deleted and sessions revoked successfully");
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@RequestBody Map<String, String> request) {
         String empId = SecurityContextHolder.getContext().getAuthentication().getName();
