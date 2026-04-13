@@ -58,5 +58,8 @@ public interface CompleteOrderRepository extends MongoRepository<CompletedOrder,
     })
     Double sumTotalPayableByHotelIdAndCheckoutDate(String hotelId, String checkoutDate);
 
+    List<CompletedOrder> findByHotelIdAndOrderTypeInAndCheckoutDateOrderByCheckoutAtDesc(
+            String hotelId, List<String> orderTypes, String checkoutDate);
+
     long countByHotelId(String hotelId);
 }

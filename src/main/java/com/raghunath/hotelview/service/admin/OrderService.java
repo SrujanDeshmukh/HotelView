@@ -353,11 +353,15 @@ public class OrderService {
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         String todayDate = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-        List<CompletedOrder> orders = completeOrderRepository
-                .findByHotelIdAndOrderTypeAndCheckoutDateOrderByCheckoutAtDesc(
-                        hotelId, "HOME_DELIVERY", todayDate);
+        // 🚀 Update: Define the list of types
+        List<String> externalTypes = List.of("HOME", "PARCEL");
 
-        // Map Entity to DTO
+        // 🚀 Update: Use the In query with the list
+        List<CompletedOrder> orders = completeOrderRepository
+                .findByHotelIdAndOrderTypeInAndCheckoutDateOrderByCheckoutAtDesc(
+                        hotelId, externalTypes, todayDate);
+
+        // Map Entity to DTO (Kept exactly as you provided)
         return orders.stream().map(order -> DeliverySummaryDTO.builder()
                         .id(order.getId())
                         .orderType(order.getOrderType())

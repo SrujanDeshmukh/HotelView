@@ -1,5 +1,6 @@
 package com.raghunath.hotelview.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude; // 👈 Add this import
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -33,6 +34,7 @@ public class CompletedOrder {
 
     private Double totalPayable;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     private LocalDateTime checkoutAt;
     private String checkoutDate;
     private String checkoutTime;
