@@ -45,6 +45,20 @@ public class CompletedOrderController {
         return ResponseEntity.ok(orderService.getTodayCompletedHomeDeliveries(hotelId));
     }
 
+    // API 1: Move specific orders to deleted collection
+    @DeleteMapping("/delete-multiple")
+    public ResponseEntity<String> deleteOrders(@RequestBody List<String> orderIds) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        orderService.softDeleteOrders(hotelId, orderIds);
+        return ResponseEntity.ok("Orders moved to trash successfully.");
+    }
+
+    @GetMapping("/deleted-list")
+    public ResponseEntity<List<org.bson.Document>> getDeletedOrders() {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(orderService.getDeletedOrders(hotelId));
+    }
+
     // Inside CompletedOrderController.java
 
     @GetMapping("/analytics/today")

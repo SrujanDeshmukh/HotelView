@@ -345,6 +345,62 @@ public class OrderService {
         });
     }
 
+    @Transactional
+    public void softDeleteOrders(String hotelId, List<String> orderIds) {
+        // 1. Check in Completed Orders
+        List<CompletedOrder> completedOrders = completeOrderRepository.findAllById(orderIds)
+                .stream()
+                .filter(o -> o.getHotelId().equals(hotelId))
+                .toList();
+
+        // 2. Check in Kitchen Orders (This is where your order ...8a60 currently is!)
+        List<KitchenOrder> kitchenOrders = kitchenOrderRepository.findAllById(orderIds)
+                .stream()
+                .filter(o -> o.getHotelId().equals(hotelId))
+                .toList();
+
+        if (completedOrders.isEmpty() && kitchenOrders.isEmpty()) {
+            throw new RuntimeException("Unauthorized or Orders not found");
+        }
+
+        // 3. Move Completed orders to trash
+        if (!completedOrders.isEmpty()) {
+            mongoTemplate.insert(completedOrders, "deleted_orders");
+            completeOrderRepository.deleteAll(completedOrders);
+        }
+
+        // 4. Move Kitchen orders to trash
+        if (!kitchenOrders.isEmpty()) {
+            mongoTemplate.insert(kitchenOrders, "deleted_orders");
+            kitchenOrderRepository.deleteAll(kitchenOrders);
+            // Important: If we delete a kitchen order, we must update the table status
+            versionService.bumpTables(hotelId);
+        }
+
+        versionService.bumpSales(hotelId);
+    }
+
+    public List<org.bson.Document> getDeletedOrders(String hotelId) {
+        // 1. Query for the specific hotel
+        Query query = new Query(Criteria.where("hotelId").is(hotelId));
+
+        // 2. Fetch as raw Documents from the 'deleted_orders' collection
+        // This bypasses Java class restrictions and gets EVERY field (items, amount, etc.)
+        List<org.bson.Document> rawDocs = mongoTemplate.find(query, org.bson.Document.class, "deleted_orders");
+
+        // 3. Clean up the response for the frontend
+        return rawDocs.stream().map(doc -> {
+            // Convert ObjectId to String for the 'id' field
+            if (doc.containsKey("_id")) {
+                doc.put("id", doc.get("_id").toString());
+                doc.remove("_id");
+            }
+            // Remove the internal Java class metadata so the JSON is clean
+            doc.remove("_class");
+            return doc;
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
     /**
      * FETCH TODAY'S COMPLETED HOME DELIVERIES (Clean Summary):
      * Returns only the essential fields for the dashboard list.
