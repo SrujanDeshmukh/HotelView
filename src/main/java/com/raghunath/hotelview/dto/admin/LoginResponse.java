@@ -19,5 +19,6 @@ public class LoginResponse {
     private String emailId;
     private String restaurantUpi;
     private String address;
+    private boolean isPlanExpired;
     private String expiryDate;
 }

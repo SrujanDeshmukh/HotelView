@@ -46,14 +46,16 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<Map<String, String>> refresh(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> refresh(@RequestBody Map<String, String> request) {
         String oldRefreshToken = request.get("refreshToken");
 
         if (oldRefreshToken == null || oldRefreshToken.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Refresh token is required"));
         }
 
-        Map<String, String> tokens = adminAuthService.refreshAdminToken(oldRefreshToken);
+        // Change the variable type from Map<String, String> to Map<String, Object> 👇
+        Map<String, Object> tokens = adminAuthService.refreshAdminToken(oldRefreshToken);
+
         return ResponseEntity.ok(tokens);
     }
 

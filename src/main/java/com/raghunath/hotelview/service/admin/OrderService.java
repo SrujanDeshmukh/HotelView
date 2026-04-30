@@ -88,6 +88,15 @@ public class OrderService {
      */
     @Transactional
     public String confirmOrder(String hotelId, int tableNumber, List<OrderItem> items, String waiterId, String comment) {
+        // 1. Subscription Check
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
+            throw new RuntimeException("Your subscription plan has ended. Kindly upgrade to the Standard or Premium plan.");
+        }
+
+        // --- Original Logic Starts Here ---
         validateTableExists(hotelId, tableNumber);
         ZonedDateTime nowIST = getISTNow();
         Double total = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
@@ -109,22 +118,30 @@ public class OrderService {
         kitchenOrderRepository.save(kOrder);
         draftRepository.findByHotelIdAndTableNumber(hotelId, tableNumber).ifPresent(draftRepository::delete);
 
-        // --- ADD THESE TWO LINES HERE ---
         updateTableVisualStatus(hotelId, tableNumber, "PENDING");
-        updateTableBill(hotelId, tableNumber, total, false); // Adds 'total' to the table's current bill
+        updateTableBill(hotelId, tableNumber, total, false);
 
         return "Order sent to kitchen";
     }
 
     @Transactional
     public String confirmHomeDelivery(String hotelId, List<OrderItem> items, String waiterId, String orderType) {
+        // 1. Subscription Check
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
+            throw new RuntimeException("Your subscription plan has ended. Kindly upgrade to the Standard or Premium plan.");
+        }
+
+        // --- Original Logic Starts Here ---
         ZonedDateTime nowIST = getISTNow();
         Double total = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
 
         KitchenOrder deliveryOrder = KitchenOrder.builder()
                 .hotelId(hotelId)
                 .tableNumber(null)
-                .orderType(orderType.toUpperCase()) // Save the user-provided type
+                .orderType(orderType.toUpperCase())
                 .items(items)
                 .totalAmount(total)
                 .status("PENDING")
@@ -135,9 +152,6 @@ public class OrderService {
                 .build();
 
         String savedId = kitchenOrderRepository.save(deliveryOrder).getId();
-
-        // 🚀 SYNC TRIGGER: Tell the Chef and Admin a new order arrived
-        // Even though there's no table, the Chef's "Pending Orders" version needs to bump
         versionService.bumpTables(hotelId);
 
         return savedId;
@@ -197,37 +211,38 @@ public class OrderService {
 
     @Transactional
     public String checkoutOrders(String hotelId, CheckoutRequest request) {
-        // 1. Fetch active orders
+        // 1. Subscription Check
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
+            throw new RuntimeException("Your subscription plan has ended. Kindly upgrade to the Standard or Premium plan.");
+        }
+
+        // --- Original Logic Starts Here ---
         List<KitchenOrder> activeOrders = kitchenOrderRepository.findAllById(request.getOrderIds());
         if (activeOrders.isEmpty()) {
             throw new RuntimeException("No active orders found");
         }
 
-        // 2. Calculation Logic
         Double grandTotal = activeOrders.stream().mapToDouble(KitchenOrder::getTotalAmount).sum();
-
-        // Get discount from request (default to 0 if null)
         Double discountPercent = (request.getDiscount() != null) ? request.getDiscount() : 0.0;
         Double discountAmount = (grandTotal * discountPercent) / 100;
         Double totalPayable = grandTotal - discountAmount;
 
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-        // 3. Build the Archive Document
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType(activeOrders.get(0).getOrderType())
                 .customerName(StringUtils.hasText(request.getCustomerName()) ? request.getCustomerName() : "Walk-in Guest")
                 .customerMobile(StringUtils.hasText(request.getCustomerMobile()) ? request.getCustomerMobile() : "0000000000")
                 .customerAddress(StringUtils.hasText(request.getCustomerAddress()) ? request.getCustomerAddress() : "N/A")
-
-                // New Fields for Pricing
                 .allOrders(activeOrders)
                 .grandTotal(grandTotal)
                 .discountPercent(discountPercent)
                 .discountAmount(discountAmount)
                 .totalPayable(totalPayable)
-
                 .paymentStatus("PAID")
                 .checkoutAt(nowIST.toLocalDateTime())
                 .checkoutDate(nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE))
@@ -235,7 +250,6 @@ public class OrderService {
                 .lastModified(LocalDateTime.now())
                 .build();
 
-        // 4. Save and Cleanup
         CompletedOrder savedBill = completeOrderRepository.save(finalBill);
         if (savedBill.getId() != null) {
             kitchenOrderRepository.deleteAll(activeOrders);
@@ -244,16 +258,14 @@ public class OrderService {
             if ("TABLE".equalsIgnoreCase(first.getOrderType()) && first.getTableNumber() != null) {
                 updateTableVisualStatus(hotelId, first.getTableNumber(), "INACTIVE");
                 updateTableBill(hotelId, first.getTableNumber(), 0.0, true);
-
-                // 🚀 Tell Waiters: Table is free
                 versionService.bumpTables(hotelId);
             }
-
-            // 🚀 Tell Admins: New Sales Data available
             versionService.bumpSales(hotelId);
         }
         return savedBill.getId();
     }
+
+
     // --- API 1: Paged Fetch (5 at a time) ---
     public Page<DeliverySummaryDTO> getCompletedOrdersPaged(String hotelId, int pageNumber) {
         Pageable pageable = PageRequest.of(pageNumber, 10, Sort.by("checkoutAt").descending());

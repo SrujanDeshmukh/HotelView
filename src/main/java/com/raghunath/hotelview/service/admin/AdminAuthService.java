@@ -36,32 +36,25 @@ public class AdminAuthService {
         Admin admin = adminRepository.findByMobile(request.getMobile())
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        // 1. Subscription check (Already implemented)
-        if (getNowIST().isAfter(admin.getSubscriptionExpiry())) {
-            throw new RuntimeException("Your subscription plan has ended.");
-        }
-
-        // 2. Password check (Already implemented)
+        // 1. Password check
         if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
             throw new RuntimeException("Invalid password");
         }
 
-        // --- NEW SMART SESSION MANAGEMENT ---
+        // 2. Check Subscription Status (Send as flag, don't block)
+        boolean isExpired = getNowIST().isAfter(admin.getSubscriptionExpiry());
 
-        // Get all active sessions for this hotel, sorted by date (oldest first)
+        // --- SMART SESSION MANAGEMENT ---
         List<AdminRefreshToken> activeSessions = adminRefreshTokenRepository.findByUserIdOrderByCreatedAtAsc(admin.getHotelId());
-
         int allowedLogins = (admin.getMaxLogins() > 0) ? admin.getMaxLogins() : 1;
 
-        // If we are at the limit, delete the OLDEST session to make room for the new one
         if (activeSessions.size() >= allowedLogins) {
-            // Remove the 0th element (the oldest one)
             AdminRefreshToken oldestSession = activeSessions.get(0);
             adminRefreshTokenRepository.delete(oldestSession);
         }
 
-        // Now proceed to create the new session (This will become the latest/newest)
-        return performLogin(admin, "Login successful");
+        // Pass the isExpired flag to performLogin so it reaches the DTO
+        return performLogin(admin, isExpired ? "Plan Expired. Read-only mode active." : "Login successful", isExpired);
     }
 
     public LoginResponse register(RegisterRequest request) {
@@ -91,15 +84,16 @@ public class AdminAuthService {
 
         Admin savedAdmin = adminRepository.save(newAdmin);
 
-        return performLogin(savedAdmin, "Registration successful");
+        // Registering users always get 'false' because their plan just started
+        return performLogin(savedAdmin, "Registration successful", false);
     }
 
     // Shared logic for Login and Register to generate tokens
-    private LoginResponse performLogin(Admin admin, String message) {
+    // Add "boolean isExpired" as the 3rd parameter here 👇
+    private LoginResponse performLogin(Admin admin, String message, boolean isExpired) {
         String accessToken = jwtUtil.generateAccessToken(admin.getHotelId(), admin.getHotelId(), "ADMIN");
         String refreshToken = jwtUtil.generateRefreshToken(admin.getHotelId(), admin.getHotelId(), "ADMIN");
 
-        // Save New Session in IST
         AdminRefreshToken adminToken = AdminRefreshToken.builder()
                 .userId(admin.getHotelId())
                 .token(refreshToken)
@@ -120,6 +114,8 @@ public class AdminAuthService {
                 .emailId(admin.getEmailId())
                 .restaurantUpi(admin.getRestaurantUpi())
                 .address(admin.getAddress())
+                // Map the boolean flag to the DTO 👇
+                .isPlanExpired(isExpired)
                 .expiryDate(admin.getSubscriptionExpiry().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")))
                 .build();
     }
@@ -153,7 +149,7 @@ public class AdminAuthService {
         return "Profile updated successfully";
     }
 
-    public Map<String, String> refreshAdminToken(String oldRefreshToken) {
+    public Map<String, Object> refreshAdminToken(String oldRefreshToken) {
         AdminRefreshToken storedToken = adminRefreshTokenRepository.findByToken(oldRefreshToken.trim())
                 .orElseThrow(() -> new RuntimeException("Session revoked or invalid."));
 
@@ -161,23 +157,22 @@ public class AdminAuthService {
         Admin admin = adminRepository.findByHotelId(hotelId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        // Check if subscription expired during the refresh attempt
-        if (getNowIST().isAfter(admin.getSubscriptionExpiry())) {
-            adminRefreshTokenRepository.delete(storedToken); // Cleanup invalid session
-            throw new RuntimeException("Your subscription plan has ended. Kindly upgrade.");
-        }
+        // Check status for frontend visibility
+        boolean isExpired = getNowIST().isAfter(admin.getSubscriptionExpiry());
 
         String newAccess = jwtUtil.generateAccessToken(hotelId, hotelId, "ADMIN");
         String newRefresh = jwtUtil.generateRefreshToken(hotelId, hotelId, "ADMIN");
 
-        // Overwrite the same document to prevent multiple tokens for one user
+        // Update existing document
         storedToken.setToken(newRefresh);
         storedToken.setExpiryDate(getNowIST().plusDays(7));
         adminRefreshTokenRepository.save(storedToken);
 
+        // Return as Object map to include the boolean flag
         return Map.of(
                 "accessToken", newAccess,
-                "refreshToken", newRefresh
+                "refreshToken", newRefresh,
+                "isPlanExpired", isExpired
         );
     }
 
