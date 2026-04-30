@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/v1/admin/login",
+                                "/api/v1/admin/register",
                                 "/api/v1/employees/login",
                                 "/api/v1/sync/test-bump",
                                 "/api/v1/admin/refresh-token",
@@ -71,6 +72,7 @@ public class SecurityConfig {
                         // 2. STAFF & USER MANAGEMENT (Admin Only)
                         .requestMatchers(
                                 "/api/v1/employees/register",
+                                "/api/v1/admin/profile",
                                 "/api/v1/employees/list",
                                 "/api/v1/employees/**"
                         ).hasRole("ADMIN")

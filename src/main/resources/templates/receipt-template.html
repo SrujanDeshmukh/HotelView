@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style>
+        .receipt-card { width: 350px; font-family: 'Courier New', monospace; padding: 20px; text-align: center; background: white; }
+        .logo { width: 80px; }
+        .line { border-top: 1px dashed black; margin: 10px 0; }
+        .item-row { display: flex; justify-content: space-between; font-size: 14px; }
+        .qr-code { width: 150px; height: 150px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="receipt-card">
+    <img src="https://your-hotel-logo.com/logo.png" class="logo"/>
+    <h2>HOTELVIEW</h2>
+    <p>SHELWADI ROAD, MURTIZAPUR</p>
+    <div class="line"></div>
+    <div class="item-row">
+        <span th:text="'DATE: ' + ${order.checkoutDate}"></span>
+        <span th:text="'TIME: ' + ${order.checkoutTime}"></span>
+    </div>
+    <div class="line"></div>
+    <div th:each="orderGroup : ${order.allOrders}">
+        <div th:each="item : ${orderGroup.items}" class="item-row">
+            <span th:text="${item.itemName}"></span>
+            <span th:text="${item.quantity} + ' x ' + ${item.price}"></span>
+        </div>
+    </div>
+    <div class="line"></div>
+    <h3 th:text="'GRAND TOTAL: ₹' + ${order.totalPayable}"></h3>
+    <p>SCAN TO PAY VIA UPI</p>
+    <img th:src="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + ${upiLink}" class="qr-code"/>
+    <p th:text="'UPI ID: ' + 'srujandeshmukh9@okicici'"></p>
+    <div class="line"></div>
+    <p>THANK YOU!</p>
+</div>
+</body>
+</html>

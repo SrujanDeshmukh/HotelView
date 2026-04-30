@@ -18,6 +18,8 @@ public interface AdminRefreshTokenRepository extends MongoRepository<AdminRefres
     @Query(value = "{ 'userId' : ?0 }", exists = true)
     boolean existsByUserId(String userId);
 
+    List<AdminRefreshToken> findByUserIdOrderByCreatedAtAsc(String userId);
+
     @Query(value = "{ 'userId' : ?0 }", count = true)
     long countByUserId(String userId);
 

@@ -5,6 +5,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+
 @Data
 @Getter
 @Setter
@@ -22,15 +24,24 @@ public class Admin {
     @Indexed(unique = true)
     private String mobile;
 
+    private String alternateMobile;
+
     private String password;
+
+    private String emailId;
+
+    private String address;
 
     private String hotelId;
 
-    private boolean approved;
+    private boolean isActive;
 
-    private boolean active;
+    private boolean isApproved;
 
     private int maxLogins = 1;
+
+    // Add this field to your Admin.java entity
+    private LocalDateTime subscriptionExpiry;
 
     private String restaurantName;
     private String restaurantAddress;

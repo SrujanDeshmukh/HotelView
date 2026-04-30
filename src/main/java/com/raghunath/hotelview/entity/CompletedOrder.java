@@ -17,7 +17,7 @@ public class CompletedOrder {
     @Id
     private String id;
     private String hotelId;
-    private String orderType; // 👈 This will now show up in the list
+    private String orderType;
 
     private String customerName;
     private String customerMobile;

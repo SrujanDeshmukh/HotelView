@@ -12,6 +12,7 @@ public class AdminRefreshToken {
     private String id;
     private String userId;
     private String token;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now(); // 👈 Add this field
     private LocalDateTime expiryDate;
-
 }

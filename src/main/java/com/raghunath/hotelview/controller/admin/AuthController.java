@@ -1,7 +1,9 @@
 package com.raghunath.hotelview.controller.admin;
 
+import com.raghunath.hotelview.dto.admin.AdminProfileDTO;
 import com.raghunath.hotelview.dto.admin.LoginRequest;
 import com.raghunath.hotelview.dto.admin.LoginResponse;
+import com.raghunath.hotelview.dto.admin.RegisterRequest;
 import com.raghunath.hotelview.service.admin.AdminAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +20,31 @@ public class AuthController {
 
     private final AdminAuthService adminAuthService;
 
+
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
 
         return adminAuthService.login(request);
 
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<LoginResponse> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(adminAuthService.register(request));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<AdminProfileDTO> getProfile() {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(adminAuthService.getProfile(hotelId));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<String> updateProfile(@RequestBody AdminProfileDTO updates) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(adminAuthService.updateProfile(hotelId, updates));
+    }
+
     @PostMapping("/refresh-token")
     public ResponseEntity<Map<String, String>> refresh(@RequestBody Map<String, String> request) {
         String oldRefreshToken = request.get("refreshToken");
