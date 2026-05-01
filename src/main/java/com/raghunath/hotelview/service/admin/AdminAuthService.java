@@ -113,6 +113,7 @@ public class AdminAuthService {
                 .alternateMobile(admin.getAlternateMobile())
                 .emailId(admin.getEmailId())
                 .restaurantUpi(admin.getRestaurantUpi())
+                .restaurantName(admin.getRestaurantName())
                 .address(admin.getAddress())
                 // Map the boolean flag to the DTO 👇
                 .isPlanExpired(isExpired)

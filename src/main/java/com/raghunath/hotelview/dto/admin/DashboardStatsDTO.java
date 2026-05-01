@@ -11,5 +11,6 @@ public class DashboardStatsDTO {
     private Long completedOrdersTodayCount;  // 128 TODAY
     private Long employeeOnlineCount;        // 14 ONLINE
     private Long totalItemsCount;            // 45 TOTAL
+    private String restaurantName;
     private Double todaySalesRupees;         // 15300.0 (till now)
 }

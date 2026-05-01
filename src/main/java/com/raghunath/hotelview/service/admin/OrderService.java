@@ -661,47 +661,44 @@ public class OrderService {
     public DashboardStatsDTO getDashboardStats(String hotelId) {
         // 1. Time Setup (Indian Standard Time)
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-        String todayDate = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE); // yyyy-MM-dd
+        String todayDate = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-        // 2. Fetch Metrics
+        // 2. Fetch Restaurant Name
+        // Replace 'hotelRepository' with the actual repository for your Hotel/Restaurant entity
+        String restaurantName = adminRepository.findByHotelId(hotelId)
+                .map(Admin::getRestaurantName)
+                .orElse("Unknown Restaurant");
 
-        // FIX 1: Active Tables (Sum of PENDING, ACCEPTED, and ACTIVE statuses)
-        // Production Note: Using a List of statuses is more accurate than just "NOT INACTIVE"
+        // 3. Fetch Metrics
         List<String> activeStatuses = List.of("PENDING", "ACCEPTED", "ACTIVE");
         Long activeTablesCount = tableRepository.countByHotelIdAndStatusIn(hotelId, activeStatuses);
 
-        // FIX 2: Home Delivery Count (Pulling from COMPLETED orders for today)
         List<String> deliveryTypes = List.of("HOME", "PARCEL");
-        Long HomeAndParcelOrdersToday = completeOrderRepository.countByHotelIdAndOrderTypeInAndCheckoutDate(
+        Long homeAndParcelOrdersToday = completeOrderRepository.countByHotelIdAndOrderTypeInAndCheckoutDate(
                 hotelId, deliveryTypes, todayDate);
 
-        // Employee Stats: Count all active employees
         Long employeeCount = employeeRepository.countByHotelIdAndIsActive(hotelId, true);
-
-        // Menu Item Stats: Count all items for this hotel
         Long totalItems = menuItemRepository.countByHotelId(hotelId);
-
-        // Completed Orders Today count (Total Bills issued today)
         Long completedTodayCount = completeOrderRepository.countByHotelIdAndCheckoutDate(
                 hotelId, todayDate);
 
-        // 3. Financial Aggregation (Actual Revenue after discount)
+        // 4. Financial Aggregation
         Double todaySalesRupees = 0.0;
         try {
             Double result = completeOrderRepository.sumTotalPayableByHotelIdAndCheckoutDate(hotelId, todayDate);
             todaySalesRupees = (result != null) ? result : 0.0;
         } catch (Exception e) {
             log.error("AGGREGATION_ERROR: Sales sum failed for hotel {}", hotelId);
-            todaySalesRupees = 0.0;
         }
 
-        // 4. Build and return the consolidated DTO
+        // 5. Build and return
         return DashboardStatsDTO.builder()
-                .activeTablesCount(activeTablesCount) // Now shows sum of Active/Pending/Accepted
-                .pendingHomeDeliveriesCount(HomeAndParcelOrdersToday) // Now shows Total Completed Deliveries Today
+                .activeTablesCount(activeTablesCount)
+                .pendingHomeDeliveriesCount(homeAndParcelOrdersToday)
                 .completedOrdersTodayCount(completedTodayCount)
                 .employeeOnlineCount(employeeCount)
                 .totalItemsCount(totalItems)
+                .restaurantName(restaurantName) // Set the fetched name here
                 .todaySalesRupees(todaySalesRupees)
                 .build();
     }

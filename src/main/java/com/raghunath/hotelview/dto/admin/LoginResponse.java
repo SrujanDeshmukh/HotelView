@@ -18,6 +18,7 @@ public class LoginResponse {
     private String alternateMobile;
     private String emailId;
     private String restaurantUpi;
+    private String restaurantName;
     private String address;
     private boolean isPlanExpired;
     private String expiryDate;
