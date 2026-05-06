@@ -67,8 +67,9 @@ public class AdminAuthService {
             throw new RuntimeException("Account already exists. Please login.");
         }
 
-        // 2. Set Expiry to 7 days from now (IST)
-        LocalDateTime subscriptionExpiry = getNowIST().plusDays(7);
+        // 2. Set Start and Expiry (IST)
+        LocalDateTime now = getNowIST(); // Capture current time
+        LocalDateTime subscriptionExpiry = now.plusDays(7);
 
         // 3. Create and Save New Admin
         Admin newAdmin = Admin.builder()
@@ -78,6 +79,7 @@ public class AdminAuthService {
                 .hotelId("HOTEL" + System.currentTimeMillis())
                 .isApproved(true)
                 .isActive(true)
+                .subscriptionStart(now) // NEW FIELD ADDED HERE
                 .subscriptionExpiry(subscriptionExpiry)
                 .maxLogins(1)
                 .build();

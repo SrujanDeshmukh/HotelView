@@ -93,7 +93,7 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
         if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
-            throw new RuntimeException("Your subscription plan has ended. Kindly upgrade to the Standard or Premium plan.");
+            throw new RuntimeException("Kindly upgrade to the Standard or Premium plan.");
         }
 
         // --- Original Logic Starts Here ---
@@ -131,7 +131,7 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
         if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
-            throw new RuntimeException("Your subscription plan has ended. Kindly upgrade to the Standard or Premium plan.");
+            throw new RuntimeException("Kindly upgrade to the Standard or Premium plan.");
         }
 
         // --- Original Logic Starts Here ---

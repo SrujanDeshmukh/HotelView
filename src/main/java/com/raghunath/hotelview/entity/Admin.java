@@ -40,6 +40,8 @@ public class Admin {
 
     private int maxLogins = 1;
 
+    private LocalDateTime subscriptionStart;
+
     // Add this field to your Admin.java entity
     private LocalDateTime subscriptionExpiry;
 

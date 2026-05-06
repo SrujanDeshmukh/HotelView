@@ -66,7 +66,8 @@ public class SecurityConfig {
                                 "/api/v1/employees/login",
                                 "/api/v1/sync/test-bump",
                                 "/api/v1/admin/refresh-token",
-                                "/api/v1/employees/refresh-token"
+                                "/api/v1/employees/refresh-token",
+                                "/api/v1/info/**"
                         ).permitAll()
 
                         // 2. STAFF & USER MANAGEMENT (Admin Only)
