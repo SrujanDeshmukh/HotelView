@@ -2,8 +2,12 @@ package com.raghunath.hotelview.repository;
 
 import com.raghunath.hotelview.entity.ExternalOrder;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import java.util.List;
+import java.util.Optional;
 
 public interface ExternalOrderRepository extends MongoRepository<ExternalOrder, String> {
-    List<ExternalOrder> findByHotelIdAndStatus(String hotelId, String status);
+
+    // ADD THESE TWO LINES:
+    boolean existsByExternalOrderId(String externalOrderId);
+
+    Optional<ExternalOrder> findByExternalOrderId(String externalOrderId);
 }

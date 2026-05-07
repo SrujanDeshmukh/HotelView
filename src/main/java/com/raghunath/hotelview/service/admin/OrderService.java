@@ -165,25 +165,27 @@ public class OrderService {
     // Inside OrderService.java
 
     public void processExternalOrder(OrderWebhookDTO dto) {
-        // 1. Verify Hotel and STORE it in the 'admin' variable
+        // 1. DEDUPLICATION: Prevent double-processing if Zomato retries the request
+        if (externalOrderRepository.existsByExternalOrderId(dto.getExternalOrderId())) {
+            System.out.println("Duplicate order " + dto.getExternalOrderId() + " ignored.");
+            return;
+        }
+
+        // 2. AUTHENTICATION: Verify Hotel and Merchant ID
         Admin admin = adminRepository.findByHotelId(dto.getHotelId())
                 .orElseThrow(() -> new RuntimeException("Hotel not found"));
 
-        // Now 'admin' is resolved!
-        // We check if the Merchant ID sent by Zomato matches what we stored earlier
-        // Change this line:
         String incomingMerchantId = dto.getMerchantId();
         String storedMerchantId = admin.getPlatformIds().get(dto.getPlatformName().toUpperCase());
 
-         // FIX: Compare storedMerchantId with incomingMerchantId, NOT externalOrderId
         if (storedMerchantId == null || !storedMerchantId.equals(incomingMerchantId)) {
             throw new RuntimeException("Unauthorized: Merchant ID mismatch");
         }
 
-        // 2. Map ExternalOrderItemDTO -> Your Internal OrderItem Class
+        // 3. MAPPING: External items to Internal items
         List<OrderItem> internalItems = dto.getItems().stream().map(extItem -> {
             OrderItem item = new OrderItem();
-            item.setItemId("EXTERNAL"); // Placeholder to satisfy @NotBlank
+            item.setItemId("EXTERNAL");
             item.setItemName(extItem.getItemName());
             item.setQuantity(extItem.getQuantity());
             item.setPrice(extItem.getPrice());
@@ -191,7 +193,7 @@ public class OrderService {
             return item;
         }).collect(Collectors.toList());
 
-        // 3. Save to ExternalOrder Collection
+        // 4. PERSISTENCE: Save to Database FIRST
         ExternalOrder externalOrder = ExternalOrder.builder()
                 .hotelId(dto.getHotelId())
                 .platform(dto.getPlatformName())
@@ -205,49 +207,50 @@ public class OrderService {
                 .receivedAt(LocalDateTime.now())
                 .build();
 
-        // Capture the saved object to get the generated ID
+        // The order is saved and the transaction is committed here
         ExternalOrder savedOrder = externalOrderRepository.save(externalOrder);
 
-        // 4. PUSH REAL-TIME ALERT
-        // Frontend will subscribe to: /topic/orders/{hotelId}
+        // 5. BROADCAST: Push via WebSocket only AFTER successful save
+        // This prevents the Race Condition Krishna is seeing
         messagingTemplate.convertAndSend("/topic/orders/" + dto.getHotelId(), savedOrder);
 
-        System.out.println("New " + dto.getPlatformName() + " order pushed via WebSocket for Hotel: " + dto.getHotelId());
+        System.out.println("New " + dto.getPlatformName() + " order saved with ID: " + savedOrder.getId());
     }
 
     // --- NEW: Approve External Order (Moves it to Kitchen) ---
     @Transactional
-    public String approveExternalOrder(String externalOrderId, String approvedBy) {
-        // 1. Fetch from the external_orders collection
-        ExternalOrder ext = externalOrderRepository.findById(externalOrderId)
-                .orElseThrow(() -> new RuntimeException("External order not found"));
+    public String approveExternalOrder(String orderIdIdentifier, String approvedBy) {
+        // 1. DUAL-ID LOOKUP: Try MongoDB ID first, then fallback to External Order ID
+        // This ensures that even if Krishna sends the wrong ID format, it still works.
+        ExternalOrder ext = externalOrderRepository.findById(orderIdIdentifier)
+                .orElseGet(() -> externalOrderRepository.findByExternalOrderId(orderIdIdentifier)
+                        .orElseThrow(() -> new RuntimeException("External order not found: " + orderIdIdentifier)));
 
-        // 2. Prevent double-acceptance
+        // 2. STATE GUARD: Prevent double-acceptance
         if ("ACCEPTED".equals(ext.getStatus())) {
             throw new RuntimeException("Order is already accepted");
         }
 
-        // 3. Mark the external record as ACCEPTED
+        // 3. UPDATE EXTERNAL STATUS
         ext.setStatus("ACCEPTED");
         externalOrderRepository.save(ext);
 
-        // 4. Transform into your standard KitchenOrder entity (Chef's View)
+        // 4. KITCHEN TRANSFORMATION
         KitchenOrder kitchenOrder = KitchenOrder.builder()
                 .hotelId(ext.getHotelId())
-                .tableNumber(null) // Integer NULL correctly represents Home Delivery/External
+                .tableNumber(null) // NULL signals Home Delivery
                 .orderType("EXTERNAL_" + ext.getPlatform())
-                .items(ext.getItems()) // Already mapped to internal OrderItem objects
+                .items(ext.getItems())
                 .totalAmount(ext.getTotalAmount())
-                .status("PENDING") // The Chef sees it as a new "Pending" task
+                .status("PENDING")
                 .createdBy(approvedBy)
                 .createdAt(LocalDateTime.now())
-                // Pass customer details in comments so the Packer/Chef sees the info
                 .comments("DELIVERY: " + ext.getCustomerName() + " | " + ext.getCustomerMobile())
                 .build();
 
         KitchenOrder saved = kitchenOrderRepository.save(kitchenOrder);
 
-        // 5. Trigger versioning system so the Kitchen UI refreshes instantly
+        // 5. VERSION BUMP: Notifies the Chef's UI to refresh
         versionService.bumpTables(ext.getHotelId());
 
         return saved.getId();
