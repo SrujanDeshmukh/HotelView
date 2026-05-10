@@ -83,7 +83,7 @@ public class SecurityConfig {
                                 "/api/v1/admin/plan/details",
                                 "api/v1/admin/integrations",
                                 "api/v1/admin/customer/details",
-                                "api/v1/admin/customer/submit/paymentDetails"
+                                "api/v1/admin/submit/paymentDetails"
                         ).hasRole("ADMIN")
 
                         // 3. TABLE OPERATIONS (Ordered by Specificity)

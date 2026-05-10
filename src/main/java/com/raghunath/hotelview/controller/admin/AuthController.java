@@ -63,18 +63,20 @@ public class AuthController {
 
     @PostMapping("/submit/paymentDetails")
     public ResponseEntity<Map<String, String>> handlePaymentSubmission(
-            @RequestParam String url,
-            @RequestParam String name,
-            @RequestParam String address,
+            @RequestBody Map<String, String> requestBody, // Changed to RequestBody
             Authentication authentication) {
 
-        // 1. Extract hotelId from Token
+        // 1. Extract values from JSON body
+        String url = requestBody.get("url");
+        String name = requestBody.get("name");
+        String address = requestBody.get("address");
+
+        // 2. Extract hotelId from Token
         String hotelId = authentication.getName();
 
-        // 2. Call Service logic
+        // 3. Call Service logic
         String message = adminAuthService.submitPaymentProof(url, name, address, hotelId);
 
-        // 3. Wrap in Map for JSON response
         Map<String, String> response = new HashMap<>();
         response.put("message", message);
 
