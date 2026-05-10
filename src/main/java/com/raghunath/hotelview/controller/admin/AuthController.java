@@ -2,10 +2,12 @@ package com.raghunath.hotelview.controller.admin;
 
 import com.raghunath.hotelview.dto.admin.*;
 import com.raghunath.hotelview.entity.Admin;
+import com.raghunath.hotelview.entity.CustomerDetails;
 import com.raghunath.hotelview.repository.AdminRepository;
 import com.raghunath.hotelview.service.admin.AdminAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

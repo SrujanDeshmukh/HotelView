@@ -311,7 +311,7 @@ public class OrderService {
 
     @Transactional
     public String checkoutOrders(String hotelId, CheckoutRequest request) {
-        // 1. Subscription Check
+        // 1. Subscription Check (Existing)
         Admin admin = adminRepository.findByHotelId(hotelId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
@@ -319,12 +319,13 @@ public class OrderService {
             throw new RuntimeException("Your subscription plan has ended. Kindly upgrade to the Standard or Premium plan.");
         }
 
-        // --- Original Logic Starts Here ---
+        // 2. Fetch Active Orders
         List<KitchenOrder> activeOrders = kitchenOrderRepository.findAllById(request.getOrderIds());
         if (activeOrders.isEmpty()) {
             throw new RuntimeException("No active orders found");
         }
 
+        // 3. Calculate Totals
         Double grandTotal = activeOrders.stream().mapToDouble(KitchenOrder::getTotalAmount).sum();
         Double discountPercent = (request.getDiscount() != null) ? request.getDiscount() : 0.0;
         Double discountAmount = (grandTotal * discountPercent) / 100;
@@ -332,6 +333,7 @@ public class OrderService {
 
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
+        // 4. Build and Save Completed Order (Existing)
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType(activeOrders.get(0).getOrderType())
@@ -351,9 +353,13 @@ public class OrderService {
                 .build();
 
         CompletedOrder savedBill = completeOrderRepository.save(finalBill);
-        if (savedBill.getId() != null) {
-            kitchenOrderRepository.deleteAll(activeOrders);
 
+        // --- NEW LOGIC: Sync to customer_details ---
+        if (savedBill.getId() != null) {
+            syncCustomerDetails(hotelId, finalBill); // Call helper method
+
+            // Existing Cleanup Logic
+            kitchenOrderRepository.deleteAll(activeOrders);
             KitchenOrder first = activeOrders.get(0);
             if ("TABLE".equalsIgnoreCase(first.getOrderType()) && first.getTableNumber() != null) {
                 updateTableVisualStatus(hotelId, first.getTableNumber(), "INACTIVE");
@@ -363,6 +369,30 @@ public class OrderService {
             versionService.bumpSales(hotelId);
         }
         return savedBill.getId();
+    }
+
+    /**
+     * Helper method to handle Upsert logic for customer details
+     */
+    private void syncCustomerDetails(String hotelId, CompletedOrder bill) {
+        String mobile = bill.getCustomerMobile();
+
+        // Condition: Only proceed if number is provided and is not the dummy "0000000000"
+        if (StringUtils.hasText(mobile) && !"0000000000".equals(mobile)) {
+
+            Query query = new Query(Criteria.where("hotelId").is(hotelId)
+                    .and("customerMobile").is(mobile));
+
+            Update update = new Update()
+                    .set("customerName", bill.getCustomerName())
+                    .set("customerAddress", bill.getCustomerAddress())
+                    .set("lastOrderDate", bill.getCheckoutAt())
+                    .inc("totalOrders", 1)               // Increment order count by 1
+                    .inc("totalAmountPaid", bill.getTotalPayable()); // Add payable to total
+
+            // upsert: true means if not found, create new; if found, update existing
+            mongoTemplate.upsert(query, update, CustomerDetails.class);
+        }
     }
 
 

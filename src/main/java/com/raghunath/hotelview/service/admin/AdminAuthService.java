@@ -3,12 +3,19 @@ package com.raghunath.hotelview.service.admin;
 import com.raghunath.hotelview.dto.admin.*;
 import com.raghunath.hotelview.entity.Admin;
 import com.raghunath.hotelview.entity.AdminRefreshToken;
+import com.raghunath.hotelview.entity.CustomerDetails;
 import com.raghunath.hotelview.entity.Plan;
 import com.raghunath.hotelview.repository.AdminRefreshTokenRepository;
 import com.raghunath.hotelview.repository.AdminRepository;
+import com.raghunath.hotelview.repository.CustomerDetailsRepository;
 import com.raghunath.hotelview.repository.PlanRepository;
 import com.raghunath.hotelview.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.bson.Document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +38,8 @@ public class AdminAuthService {
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder;
     private final PlanRepository planRepository;
+    private final HotelViewDetailsService hotelViewDetailsService;
+    private final CustomerDetailsRepository customerDetailsRepository;
 
     // Helper to get current time in IST
     private LocalDateTime getNowIST() {
@@ -243,21 +252,35 @@ public class AdminAuthService {
     }
 
     public Map<String, Object> getSubscriptionDashboard(String hotelId) {
-        // 1. Get Admin to find their current planType
+        // 1. Get Admin details
         Admin admin = adminRepository.findByHotelId(hotelId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        // 2. Fetch all plan details from the 'plans' collection
+        // 2. Fetch available plans
         List<Plan> allPlans = planRepository.findAll();
-
         Map<String, Object> response = new HashMap<>();
+
+        // Core Dashboard Data
         response.put("currentPlan", admin.getPlanType());
         response.put("availableOptions", allPlans);
+
+        // Adding ONLY the payment document data
+        // We extract the 'payment_details' object specifically for the frontend
+        org.bson.Document paymentDoc = hotelViewDetailsService.getPaymentInfo();
+
+        if (paymentDoc != null) {
+            response.put("paymentDetails", paymentDoc.get("payment_details"));
+        }
 
         return response;
     }
 
+    public Page<CustomerDetails> getCustomersByHotel(String hotelId, int page) {
+        // Create Pageable: (page number, page size, sort direction, field name)
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.DESC, "lastOrderDate"));
 
+        return customerDetailsRepository.findByHotelId(hotelId, pageable);
+    }
 
     @Transactional
     public void logoutAdmin(String refreshToken) {

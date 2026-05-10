@@ -31,4 +31,9 @@ public class HotelViewDetailsService {
         Query query = new Query(Criteria.where("contact_section").exists(true));
         return mongoTemplate.findOne(query, Document.class, "hotelview_details");
     }
+
+    public Document getPaymentInfo() {
+        Query query = new Query(Criteria.where("payment_details").exists(true));
+        return mongoTemplate.findOne(query, Document.class, "hotelview_details");
+    }
 }
