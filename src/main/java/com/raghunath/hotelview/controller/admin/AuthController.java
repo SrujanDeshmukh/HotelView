@@ -114,6 +114,8 @@ public class AuthController {
         return ResponseEntity.ok(adminAuthService.getSubscriptionDashboard(hotelId));
     }
 
+
+
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@RequestBody Map<String, String> request) {
         // Get the token from the body
