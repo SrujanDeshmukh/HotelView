@@ -1,9 +1,12 @@
 package com.raghunath.hotelview.service.admin;
 
+import com.raghunath.hotelview.entity.KitchenOrder;
 import com.raghunath.hotelview.entity.RestaurantTable;
+import com.raghunath.hotelview.repository.KitchenOrderRepository;
 import com.raghunath.hotelview.repository.TableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,6 +16,8 @@ import java.util.List;
 public class TableService {
 
     private final TableRepository tableRepository;
+    private final KitchenOrderRepository kitchenOrderRepository;
+    private final VersionService versionService;
 
     public List<RestaurantTable> getAllTables(String hotelId) {
         return tableRepository.findAllByHotelIdOrderByTableNumberAsc(hotelId);
@@ -25,6 +30,52 @@ public class TableService {
         table.setUpdatedAt(LocalDateTime.now()); // ✅ Set updatedAt
         return tableRepository.save(table);
     }
+
+    @Transactional
+    public void transferTableOrders(String hotelId, int fromTable, int toTable) {
+        // 1. Validate that the destination table exists
+        RestaurantTable targetTable = tableRepository.findByHotelIdAndTableNumber(hotelId, toTable)
+                .orElseThrow(() -> new RuntimeException("Target table " + toTable + " does not exist"));
+
+        // 2. Fetch all active kitchen orders for the source table
+        List<KitchenOrder> activeOrders = kitchenOrderRepository.findByHotelIdAndTableNumber(hotelId, fromTable);
+
+        if (activeOrders.isEmpty()) {
+            throw new RuntimeException("No active orders found on Table " + fromTable);
+        }
+
+        // 3. Calculate the total amount being moved
+        double transferAmount = activeOrders.stream()
+                .mapToDouble(o -> o.getTotalAmount() != null ? o.getTotalAmount() : 0.0)
+                .sum();
+
+        // 4. Update the table number in each kitchen order
+        activeOrders.forEach(order -> {
+            order.setTableNumber(toTable);
+            // Optional: you can also update the 'updatedAt' timestamp here
+        });
+        kitchenOrderRepository.saveAll(activeOrders);
+
+        // 5. Update Source Table: Deduct bill and set to AVAILABLE if empty
+        tableRepository.findByHotelIdAndTableNumber(hotelId, fromTable).ifPresent(source -> {
+            double current = source.getCurrentBill() != null ? source.getCurrentBill() : 0.0;
+            double newBill = Math.max(0, current - transferAmount);
+            source.setCurrentBill(newBill);
+            if (newBill <= 0) source.setStatus("AVAILABLE");
+            tableRepository.save(source);
+        });
+
+        // 6. Update Target Table: Add bill and set to OCCUPIED/PENDING
+        double targetCurrent = targetTable.getCurrentBill() != null ? targetTable.getCurrentBill() : 0.0;
+        targetTable.setCurrentBill(targetCurrent + transferAmount);
+        targetTable.setStatus("PENDING"); // Or "OCCUPIED" based on your logic
+        tableRepository.save(targetTable);
+
+        // 7. Sync Versions so Waiter Apps update immediately
+        versionService.bumpTables(hotelId);
+    }
+
+
 
     public void deleteTable(String hotelId, int tableNumber) {
         tableRepository.findByHotelIdAndTableNumber(hotelId, tableNumber)

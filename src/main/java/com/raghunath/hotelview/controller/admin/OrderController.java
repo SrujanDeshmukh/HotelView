@@ -37,6 +37,7 @@ public class OrderController {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
+    // 1. SAVE DRAFT FOR SPECIFIC TABLE
     @PostMapping("/draft/{tableNumber}")
     public ResponseEntity<String> saveOrderDraft(@PathVariable int tableNumber, @Valid @RequestBody List<OrderItem> items){
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -44,15 +45,14 @@ public class OrderController {
         return ResponseEntity.ok("Draft saved successfully");
     }
 
+    // 2. GET DRAFT FOR SPECIFIC TABLE
     @GetMapping("/draft/{tableNumber}")
     public OrderDraft getOrderDraft(@PathVariable int tableNumber){
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         return orderService.getDraft(hotelId, tableNumber);
     }
 
-    // 1. PLACE ORDER (Waiter/Admin clicks 'Confirm')
-    // 1. PLACE ORDER (Updated to accept current items from UI)
-    // 1. PLACE TABLE ORDER
+    // 3. PLACE TABLE ORDER
     @PostMapping("/confirm/{tableNumber}")
     public ResponseEntity<String> confirmOrder(@PathVariable int tableNumber, @Valid @RequestBody OrderRequest request
     ) {
@@ -66,11 +66,10 @@ public class OrderController {
                 waiterId,
                 request.getComment()
         );
-
         return ResponseEntity.ok("Order sent to kitchen");
     }
 
-    // 2. PLACE HOME DELIVERY ORDER
+    // 4. PLACE HOME DELIVERY ORDER
     @PostMapping("/confirm/delivery")
     public ResponseEntity<String> confirmHomeDelivery(@Valid @RequestBody DeliveryRequest request) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -82,6 +81,58 @@ public class OrderController {
         String orderId = orderService.confirmHomeDelivery(hotelId, request.getItems(), waiterId, type);
         return ResponseEntity.ok("Order sent to kitchen. ID: " + orderId);
     }
+
+    // 5. FETCH SPECIFIC TABLE ORDERS (Latest First)
+    @GetMapping("/table/{tableNumber}")
+    public ResponseEntity<List<KitchenOrder>> getTableOrders(@PathVariable int tableNumber) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        // Fetches all orders for this table that are not yet PAID, newest at top
+        return ResponseEntity.ok(orderService.getOrdersByTable(hotelId, tableNumber));
+    }
+
+    // 6. CHECKOUT ORDER FOR TABLE
+    @PostMapping("/checkout")
+    public ResponseEntity<CheckoutResponse> checkout(@RequestBody CheckoutRequest request) {
+        // 1. Extract hotelId from Token
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // 2. Call service which now returns the full CheckoutResponse object
+        CheckoutResponse response = orderService.checkoutOrders(hotelId, request);
+
+        // 3. Return the object as JSON
+        return ResponseEntity.ok(response);
+    }
+
+    // 7. GET STATISTICS
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<DashboardStatsDTO> getDashboardStats() {
+        String hotelId = getAuthenticatedUserId();
+        return ResponseEntity.ok(orderService.getDashboardStats(hotelId));
+    }
+
+    // 8. EDIT ORDER
+    @PutMapping("/kitchen/{orderId}/confirm-edit")
+    public ResponseEntity<String> confirmEdit(
+            @PathVariable String orderId,
+            @RequestBody List<OrderItem> newItems) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        orderService.confirmOrderEdit(hotelId, orderId, newItems);
+        return ResponseEntity.ok("Order updated and logs saved successfully");
+    }
+
+    // 9. Get Full Table History via Completed Order ID
+    @GetMapping("/summary/completed/{completedOrderId}")
+    public ResponseEntity<Map<String, Object>> getFullTableSummary(@PathVariable String completedOrderId) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            Map<String, Object> aggregatedSummary = orderService.getAggregatedTableSummary(hotelId, completedOrderId);
+            return ResponseEntity.ok(aggregatedSummary);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 
     // 1. PUBLIC WEBHOOK: Receives orders from Zomato/Swiggy
     // This is called automatically by the external platform
@@ -102,90 +153,5 @@ public class OrderController {
         String kitchenOrderId = orderService.approveExternalOrder(orderId, userId);
 
         return ResponseEntity.ok("External order approved. Kitchen Order ID: " + kitchenOrderId);
-    }
-
-    // 4. FETCH SPECIFIC TABLE ORDERS (Latest First)
-    @GetMapping("/table/{tableNumber}")
-    public ResponseEntity<List<KitchenOrder>> getTableOrders(@PathVariable int tableNumber) {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        // Fetches all orders for this table that are not yet PAID, newest at top
-        return ResponseEntity.ok(orderService.getOrdersByTable(hotelId, tableNumber));
-    }
-
-    @PostMapping("/checkout")
-    public ResponseEntity<String> checkout(@RequestBody CheckoutRequest request) {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        // This now returns the MongoDB _id of the newly created CompletedOrder
-        String completedOrderId = orderService.checkoutOrders(hotelId, request);
-
-        return ResponseEntity.ok(completedOrderId);
-    }
-
-    // 5. CHEF: FETCH PENDING ORDERS (New orders only)
-    @GetMapping("/kitchen/pending")
-    public ResponseEntity<List<KitchenOrder>> getPendingOrders() {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(kitchenOrderRepository.findByHotelIdAndStatus(hotelId, "PENDING"));
-    }
-
-    // 6. CHEF: ACCEPT ORDER (Change PENDING -> PREPARING)
-    @PatchMapping("/kitchen/accept/{orderId}")
-    public ResponseEntity<String> acceptOrder(@PathVariable String orderId) {
-        String chefId = getAuthenticatedUserId();
-        orderService.updateStatusWithChef(orderId, "PREPARING", chefId);
-        return ResponseEntity.ok("Accepted by " + chefId);
-    }
-
-    // 7. CHEF: FETCH PREPARING ORDERS (Orders currently being cooked)
-    @GetMapping("/kitchen/preparing")
-    public ResponseEntity<List<KitchenOrder>> getPreparingOrders() {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(kitchenOrderRepository.findByHotelIdAndStatus(hotelId, "PREPARING"));
-    }
-
-    // 8. CHEF: COMPLETE ORDER (Change PREPARING -> COMPLETED)
-    @PatchMapping("/kitchen/complete/{orderId}")
-    public ResponseEntity<String> completeOrder(@PathVariable String orderId) {
-        orderService.updateOrderStatus(orderId, "COMPLETED");
-        return ResponseEntity.ok("Order marked as COMPLETED");
-    }
-
-    @GetMapping("/dashboard/stats")
-    public ResponseEntity<DashboardStatsDTO> getDashboardStats() {
-        String hotelId = getAuthenticatedUserId();
-        return ResponseEntity.ok(orderService.getDashboardStats(hotelId));
-    }
-
-    // API 1: Confirm the Edit
-    @PutMapping("/kitchen/{orderId}/confirm-edit")
-    public ResponseEntity<String> confirmEdit(
-            @PathVariable String orderId,
-            @RequestBody List<OrderItem> newItems) {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        orderService.confirmOrderEdit(hotelId, orderId, newItems);
-        return ResponseEntity.ok("Order updated and logs saved successfully");
-    }
-
-    // API 2: Get History Summary
-    // API 2: Get History Summary
-    // API: Get Full Table History via Completed Order ID
-    @GetMapping("/summary/completed/{completedOrderId}")
-    public ResponseEntity<Map<String, Object>> getFullTableSummary(@PathVariable String completedOrderId) {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        try {
-            Map<String, Object> aggregatedSummary = orderService.getAggregatedTableSummary(hotelId, completedOrderId);
-            return ResponseEntity.ok(aggregatedSummary);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // 9. FETCH COMPLETED ORDERS (Ready to be served)
-    @GetMapping("/kitchen/completed")
-    public ResponseEntity<List<KitchenOrder>> getCompletedOrders() {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(kitchenOrderRepository.findByHotelIdAndStatus(hotelId, "COMPLETED"));
     }
 }

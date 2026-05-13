@@ -37,7 +37,7 @@ public class TableController {
             @PathVariable int fromTable,
             @PathVariable int toTable) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        orderService.transferTableOrders(hotelId, fromTable, toTable);
+        tableService.transferTableOrders(hotelId, fromTable, toTable);
         return ResponseEntity.ok("Orders transferred to Table " + toTable + " successfully");
     }
 

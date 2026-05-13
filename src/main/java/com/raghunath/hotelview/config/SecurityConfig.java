@@ -35,7 +35,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ FIX: Tells Spring "I handle auth via JWT, stop creating default password"
+    // Tells Spring "I handle auth via JWT, stop creating default password"
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
@@ -43,7 +43,7 @@ public class SecurityConfig {
         };
     }
 
-    // ✅ FIX: Exposes AuthenticationManager in case any service needs it
+    // Exposes AuthenticationManager in case any service needs it
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -87,13 +87,13 @@ public class SecurityConfig {
                         ).hasRole("ADMIN")
 
                         // 3. TABLE OPERATIONS (Ordered by Specificity)
-                        // ✅ 1. Allow Waiters and Admins to VIEW tables (Your "getMyTables" API)
+                        // Allow Waiters and Admins to VIEW tables (Your "getMyTables" API)
                         .requestMatchers(HttpMethod.GET, "/api/v1/tables").hasAnyRole("ADMIN", "WAITER")
 
-                        // ✅ 2. Allow Waiters and Admins to TRANSFER orders
+                        // Allow Waiters and Admins to TRANSFER orders
                         .requestMatchers("/api/v1/tables/transfer/**").hasAnyRole("ADMIN", "WAITER")
 
-                        // ❌ 3. Restrict everything else (Add, Update, Delete) to ADMIN ONLY
+                        // Restrict everything else (Add, Update, Delete) to ADMIN ONLY
                         .requestMatchers("/api/v1/tables/**").hasRole("ADMIN")
 
                         // 4. KITCHEN OPERATIONS (Role-Based Methods)
