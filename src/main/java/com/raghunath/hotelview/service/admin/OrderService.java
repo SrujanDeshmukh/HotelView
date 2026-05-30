@@ -395,9 +395,7 @@ public class OrderService {
      * 7. CHECKOUT ORDERS: checkout all orders.
      */
     @Transactional
-    public void instantOrderAndCheckout(String hotelId, InstantCheckoutRequest request) {
-        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
-
+    public void instantOrderAndCheckout(String hotelId, InstantCheckoutRequest request, String actualLoggedInUser) {
         // 1. Subscription Check
         Admin admin = adminRepository.findByHotelId(hotelId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
@@ -417,7 +415,6 @@ public class OrderService {
         ZonedDateTime nowIST = getISTNow();
 
         // 3. Prepare an in-memory transient order object assigning ONLY the items array
-        // Omit hotelId and orderType here so they are not written to the inner document
         KitchenOrder transientOrder = KitchenOrder.builder()
                 .items(items)
                 .build();
@@ -426,16 +423,16 @@ public class OrderService {
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType("INSTANT")
-                .customerName(null)
-                .customerMobile(null)
-                .customerAddress(null)
-                .allOrders(Collections.singletonList(transientOrder)) // Type matches List<KitchenOrder> perfectly
+                .allOrders(Collections.singletonList(transientOrder))
                 .grandTotal(grandTotal)
                 .paymentStatus("PAID")
                 .discountPercent(discountPercent)
                 .discountAmount(discountAmount)
                 .totalPayable(totalPayable)
-                .checkoutBy(currentUserId)
+
+                // 🚀 STEP 6: Ensure this variable is exactly what's being used here!
+                .checkoutBy(actualLoggedInUser)
+
                 .checkoutAt(nowIST.toLocalDateTime())
                 .checkoutDate(nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE))
                 .checkoutTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))

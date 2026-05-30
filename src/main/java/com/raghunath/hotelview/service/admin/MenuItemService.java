@@ -37,6 +37,7 @@ public class MenuItemService {
                 .isAvailable(request.getIsAvailable())
                 .imageUrl(request.getImageUrl())
                 .preparationTime(request.getPreparationTime())
+                .quantity(request.getQuantity())
                 .createdAt(now)
                 .updatedAt(now) // 👈 Critical for Version Check
                 .isApproved(true)
@@ -66,7 +67,7 @@ public class MenuItemService {
             switch (key) {
                 case "price" -> existingItem.setPrice(new java.math.BigDecimal(value.toString()));
                 case "isAvailable" -> existingItem.setIsAvailable((Boolean) value);
-
+                case "quantity" -> existingItem.setQuantity(value != null ? value.toString() : null);
             }
         });
 
@@ -84,6 +85,7 @@ public class MenuItemService {
                 .isVeg(savedItem.getIsVeg())
                 .imageUrl(savedItem.getImageUrl())
                 .description(savedItem.getDescription())
+                .quantity(savedItem.getQuantity())
                 .build();
     }
 
@@ -117,6 +119,7 @@ public class MenuItemService {
                 .isVeg(item.getIsVeg())
                 .isAvailable(item.getIsAvailable())
                 .imageUrl(item.getImageUrl())
+                .quantity(item.getQuantity())
                 .build();
     }
 
@@ -170,7 +173,7 @@ public class MenuItemService {
         existingItem.setIsAvailable(dto.getIsAvailable() != null ? dto.getIsAvailable() : existingItem.getIsAvailable());
         existingItem.setImageUrl(dto.getImageUrl());
         existingItem.setPreparationTime(dto.getPreparationTime());
-
+        existingItem.setQuantity(dto.getQuantity());
         existingItem.setUpdatedAt(LocalDateTime.now());
 
         MenuItem savedItem = menuItemRepository.save(existingItem);

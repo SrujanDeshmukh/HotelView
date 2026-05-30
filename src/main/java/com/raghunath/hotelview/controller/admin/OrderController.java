@@ -6,6 +6,7 @@ import com.raghunath.hotelview.entity.KitchenOrder;
 import com.raghunath.hotelview.entity.OrderDraft;
 import com.raghunath.hotelview.entity.OrderEdit;
 import com.raghunath.hotelview.repository.KitchenOrderRepository;
+import com.raghunath.hotelview.security.JwtUtil;
 import com.raghunath.hotelview.service.admin.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class OrderController {
     private final OrderService orderService;
     private final KitchenOrderRepository kitchenOrderRepository;
     private final MongoTemplate mongoTemplate;
+    private final JwtUtil jwtUtil;
 
     private String getAuthenticatedUserId() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
@@ -103,11 +105,21 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    // 7. CHECKOUT ORDER FOR TABLE
     @PostMapping("/instant/checkout")
-    public ResponseEntity<String> processInstantOrder(@Valid @RequestBody InstantCheckoutRequest request) {
+    public ResponseEntity<String> processInstantOrder(
+            @RequestHeader("Authorization") String authHeader, // 🚀 STEP 2: Intercept the Header
+            @Valid @RequestBody InstantCheckoutRequest request) {
+
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        orderService.instantOrderAndCheckout(hotelId, request);
+
+        // 🚀 STEP 3: Strip out "Bearer " and parse the token
+        String token = authHeader.substring(7).trim();
+
+        // 🚀 STEP 4: Call your existing method which reads the .getSubject() (the real User ID)
+        String actualLoggedInUser = jwtUtil.extractUserId(token);
+
+        // 🚀 STEP 5: Pass it down to the service layer
+        orderService.instantOrderAndCheckout(hotelId, request, actualLoggedInUser);
         return ResponseEntity.ok("Success");
     }
 

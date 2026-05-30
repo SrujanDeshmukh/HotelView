@@ -20,6 +20,8 @@ public class MenuItemRequest {
 
     private BigDecimal price;
 
+    private String quantity;
+
     private Boolean isVeg;
 
     private Boolean isAvailable;

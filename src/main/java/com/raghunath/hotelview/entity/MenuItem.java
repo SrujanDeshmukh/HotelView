@@ -40,6 +40,9 @@ public class MenuItem {
     @Field("price")
     private BigDecimal price;
 
+    @Field("quantity")
+    private String quantity;
+
     @Field("isVeg")
     private Boolean isVeg;
 

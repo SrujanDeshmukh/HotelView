@@ -19,6 +19,8 @@ public class MenuItemUpdateDTO {
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal price;
 
+    private String quantity;
+
     private String description;
 
     @NotBlank(message = "Short code is required")
