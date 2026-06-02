@@ -1,12 +1,12 @@
 package com.raghunath.hotelview.service.admin;
 
-import com.raghunath.hotelview.dto.admin.MenuItemRequest;
-import com.raghunath.hotelview.dto.admin.MenuItemSummaryDTO; // 👈 New DTO
-import com.raghunath.hotelview.dto.admin.MenuItemUpdateDTO;
-import com.raghunath.hotelview.dto.admin.MenuVersionResponse;
+import com.raghunath.hotelview.dto.admin.*;
 import com.raghunath.hotelview.entity.MenuItem;
 import com.raghunath.hotelview.repository.MenuItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching; // 👈 Combined atomic evictions
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -23,7 +23,13 @@ public class MenuItemService {
 
     private final MenuItemRepository menuItemRepository;
 
-
+    // ====================================================================
+    // WRITE: Adds item & atomically wipes affected target hotel buckets
+    // ====================================================================
+    @Caching(evict = {
+            @CacheEvict(value = "menuSummaryCache", key = "#hotelIdFromToken"),
+            @CacheEvict(value = "menuCache", allEntries = true)
+    })
     public String addMenuItem(MenuItemRequest request, String hotelIdFromToken) {
         LocalDateTime now = LocalDateTime.now();
         MenuItem item = MenuItem.builder()
@@ -39,130 +45,35 @@ public class MenuItemService {
                 .preparationTime(request.getPreparationTime())
                 .quantity(request.getQuantity())
                 .createdAt(now)
-                .updatedAt(now) // 👈 Critical for Version Check
+                .updatedAt(now)
                 .isApproved(true)
                 .build();
         menuItemRepository.save(item);
         return "Item added successfully with code: " + request.getShortCode();
     }
 
-
-    public List<MenuItemSummaryDTO> searchMenuItems(String hotelId, String query) {
-        if (!StringUtils.hasText(query)) {
-            return Collections.emptyList();
-        }
-
-        return menuItemRepository.findByHotelIdAndSearchQuery(hotelId, query.trim())
-                .stream()
-                .map(this::convertToSummaryDto)
-                .collect(Collectors.toList());
-    }
-
-
-    public MenuItemSummaryDTO patchMenuItem(String hotelId, String itemId, java.util.Map<String, Object> updates) {
-        MenuItem existingItem = menuItemRepository.findByHotelIdAndId(hotelId, itemId)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
-
-        updates.forEach((key, value) -> {
-            switch (key) {
-                case "price" -> existingItem.setPrice(new java.math.BigDecimal(value.toString()));
-                case "isAvailable" -> existingItem.setIsAvailable((Boolean) value);
-                case "quantity" -> existingItem.setQuantity(value != null ? value.toString() : null);
-            }
-        });
-
-        existingItem.setUpdatedAt(java.time.LocalDateTime.now());
-        MenuItem savedItem = menuItemRepository.save(existingItem);
-
-
-        return MenuItemSummaryDTO.builder()
-                .id(savedItem.getId())
-                .name(savedItem.getName())
-                .price(savedItem.getPrice())
-                .shortCode(savedItem.getShortCode())
-                .category(savedItem.getCategory())
-                .isAvailable(savedItem.getIsAvailable())
-                .isVeg(savedItem.getIsVeg())
-                .imageUrl(savedItem.getImageUrl())
-                .description(savedItem.getDescription())
-                .quantity(savedItem.getQuantity())
-                .build();
-    }
-
-
+    // ====================================================================
+    // READ: Caches full snapshot layout by isolation target key
+    // ====================================================================
+    @Cacheable(value = "menuSummaryCache", key = "#hotelId")
     public List<MenuItemSummaryDTO> getAllItemsForCache(String hotelId) {
+        // Database is accessed exactly ONCE. Millions of incoming user queries fetch directly from RAM.
         return menuItemRepository.findAllByHotelIdForCache(hotelId)
                 .stream()
                 .map(this::convertToSummaryDto)
                 .collect(Collectors.toList());
     }
 
-
-    public long getLatestUpdateTimestamp(String hotelId) {
-        return menuItemRepository.findTopByHotelIdOrderByUpdatedAtDesc(hotelId)
-                .map(item -> {
-                    LocalDateTime latest = (item.getUpdatedAt() != null) ? item.getUpdatedAt() : item.getCreatedAt();
-                    return latest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-                })
-                .orElse(0L);
-    }
-
-
-    private MenuItemSummaryDTO convertToSummaryDto(MenuItem item) {
-        return MenuItemSummaryDTO.builder()
-                .id(item.getId())
-                .category(item.getCategory())
-                .name(item.getName())
-                .shortCode(item.getShortCode())
-                .description(item.getDescription())
-                .price(item.getPrice())
-                .isVeg(item.getIsVeg())
-                .isAvailable(item.getIsAvailable())
-                .imageUrl(item.getImageUrl())
-                .quantity(item.getQuantity())
-                .build();
-    }
-
-
-    public List<MenuItem> getCategoryItems(String hotelIdFromToken, String category) {
-        return menuItemRepository.findByHotelIdAndCategoryAndIsApprovedTrue(hotelIdFromToken, category);
-    }
-
-
-    public MenuItem getMenuItemByHotelAndName(String hotelId, String name) {
-        return menuItemRepository.findByHotelIdAndName(hotelId, name)
-                .orElseThrow(() -> new RuntimeException("Menu item '" + name + "' not found for this hotel."));
-    }
-
-
-    public MenuItem toggleAvailability(String hotelId, String itemId, boolean available) {
-        MenuItem item = menuItemRepository.findByHotelIdAndId(hotelId, itemId)
-                .orElseThrow(() -> new RuntimeException("Menu item not found with id: " + itemId));
-
-        item.setIsAvailable(available);
-        item.setUpdatedAt(java.time.LocalDateTime.now()); // 👈 This is the "version trigger"
-
-        return menuItemRepository.save(item);
-    }
-
-
-    public Page<MenuItem> getAllHotelItems(String hotelId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return menuItemRepository.findByHotelIdAndIsApprovedTrue(hotelId, pageable);
-    }
-
-
-    public MenuItemSummaryDTO toggleAvailabilityAndReturnDto(String hotelId, String itemId, boolean available) {
-        MenuItem item = toggleAvailability(hotelId, itemId, available);
-        return convertToSummaryDto(item);
-    }
-
-
+    // ====================================================================
+    // WRITE: Updates details and evicts cache mapping for this specific hotel
+    // ====================================================================
+    @Caching(evict = {
+            @CacheEvict(value = "menuSummaryCache", key = "#hotelId"),
+            @CacheEvict(value = "menuCache", allEntries = true)
+    })
     public MenuItemSummaryDTO updateMenuItem(String hotelId, String itemId, MenuItemUpdateDTO dto) {
-
         MenuItem existingItem = menuItemRepository.findByHotelIdAndId(hotelId, itemId)
                 .orElseThrow(() -> new RuntimeException("Menu item not found or unauthorized access"));
-
 
         existingItem.setName(dto.getName());
         existingItem.setCategory(dto.getCategory());
@@ -177,10 +88,49 @@ public class MenuItemService {
         existingItem.setUpdatedAt(LocalDateTime.now());
 
         MenuItem savedItem = menuItemRepository.save(existingItem);
-
         return convertToSummaryDto(savedItem);
     }
 
+    // ====================================================================
+    // WRITE: Toggles item availability and flushes local caching records
+    // ====================================================================
+    @Caching(evict = {
+            @CacheEvict(value = "menuSummaryCache", key = "#hotelId"),
+            @CacheEvict(value = "menuCache", allEntries = true)
+    })
+    public MenuItemSummaryDTO toggleAvailabilityAndReturnDto(String hotelId, String itemId, boolean available) {
+        MenuItem item = toggleAvailability(hotelId, itemId, available);
+        return convertToSummaryDto(item);
+    }
+
+    public MenuItem toggleAvailability(String hotelId, String itemId, boolean available) {
+        MenuItem item = menuItemRepository.findByHotelIdAndId(hotelId, itemId)
+                .orElseThrow(() -> new RuntimeException("Menu item not found with id: " + itemId));
+
+        item.setIsAvailable(available);
+        item.setUpdatedAt(LocalDateTime.now()); // Triggers sync version change
+
+        return menuItemRepository.save(item);
+    }
+
+    // ====================================================================
+    // ADMINISTRATIVE ENDPOINTS: Business implementations
+    // ====================================================================
+    @Cacheable(value = "menuCache", key = "#hotelId + '-' + #page + '-' + #size")
+    public Page<MenuItem> getAllHotelItems(String hotelId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return menuItemRepository.findByHotelIdAndIsApprovedTrue(hotelId, pageable);
+    }
+
+    public List<MenuItemSummaryDTO> searchMenuItems(String hotelId, String query) {
+        if (!StringUtils.hasText(query)) {
+            return Collections.emptyList();
+        }
+        return menuItemRepository.findByHotelIdAndSearchQuery(hotelId, query.trim())
+                .stream()
+                .map(this::convertToSummaryDto)
+                .collect(Collectors.toList());
+    }
 
     public MenuVersionResponse getMenuMetadata(String hotelId) {
         long version = menuItemRepository.findTopByHotelIdOrderByUpdatedAtDesc(hotelId)
@@ -190,17 +140,37 @@ public class MenuItemService {
                 })
                 .orElse(0L);
 
-
         long count = menuItemRepository.countByHotelId(hotelId);
-
         return new MenuVersionResponse(version, count);
     }
 
-
     public List<MenuItem> getChangedItems(String hotelId, long lastSyncMillis) {
         LocalDateTime lastSync = java.time.Instant.ofEpochMilli(lastSyncMillis)
-                .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-
+                .atZone(ZoneId.systemDefault()).toLocalDateTime();
         return menuItemRepository.findByHotelIdAndUpdatedAtGreaterThan(hotelId, lastSync);
+    }
+
+    public List<MenuItem> getCategoryItems(String hotelIdFromToken, String category) {
+        return menuItemRepository.findByHotelIdAndCategoryAndIsApprovedTrue(hotelIdFromToken, category);
+    }
+
+    public MenuItem getMenuItemByHotelAndName(String hotelId, String name) {
+        return menuItemRepository.findByHotelIdAndName(hotelId, name)
+                .orElseThrow(() -> new RuntimeException("Menu item '" + name + "' not found for this hotel."));
+    }
+
+    private MenuItemSummaryDTO convertToSummaryDto(MenuItem item) {
+        return MenuItemSummaryDTO.builder()
+                .id(item.getId())
+                .category(item.getCategory())
+                .name(item.getName())
+                .shortCode(item.getShortCode())
+                .description(item.getDescription())
+                .price(item.getPrice())
+                .isVeg(item.getIsVeg())
+                .isAvailable(item.getIsAvailable())
+                .imageUrl(item.getImageUrl())
+                .quantity(item.getQuantity())
+                .build();
     }
 }

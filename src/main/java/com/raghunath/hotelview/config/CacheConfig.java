@@ -1,28 +1,23 @@
 package com.raghunath.hotelview.config;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 @Configuration
+@EnableCaching // 👈 Crucial: Activates Spring's caching engine globally across your system
 public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager();
 
-        // Register the exact cache names explicitly in Java code
+        // Explicitly register your high-traffic isolation memory buckets
         cacheManager.setCacheNames(Arrays.asList("menuCache", "menuSummaryCache"));
-
-        // Apply your Render 1-hour expiration, 10-hotel limit rules directly
-        cacheManager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(10)
-                .expireAfterAccess(1, TimeUnit.HOURS));
 
         return cacheManager;
     }
