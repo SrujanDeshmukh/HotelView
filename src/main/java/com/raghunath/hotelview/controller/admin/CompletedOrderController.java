@@ -50,7 +50,6 @@ public class CompletedOrderController {
     }
 
     @DeleteMapping("/delete-multiple")
-    @CacheEvict(value = "orderCache", allEntries = true)
     public ResponseEntity<String> deleteOrders(@RequestBody List<String> orderIds) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
         completedOrderService.softDeleteOrders(hotelId, orderIds);

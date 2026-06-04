@@ -82,9 +82,26 @@ public class TableService {
 
 
 
-    public void deleteTable(String hotelId, String tableName) {
-        tableRepository.findByHotelIdAndTableName(hotelId, tableName)
-                .ifPresent(tableRepository::delete);
+    public void deleteTable(String id, String hotelId) {
+        // 1. Fetch by the true Document ID
+        RestaurantTable table = tableRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Table not found with id: " + id));
+
+        // 2. Add an ownership security guardrail check
+        if (!table.getHotelId().equals(hotelId)) {
+            throw new RuntimeException("Unauthorized: You cannot delete this table");
+        }
+
+        // 3. Prevent deleting active tables with running tabs
+        if (table.getCurrentBill() != null && table.getCurrentBill() > 0) {
+            throw new RuntimeException("Cannot delete table while it has an active unpaid bill of ₹" + table.getCurrentBill());
+        }
+
+        // 4. Drop from database safely
+        tableRepository.delete(table);
+
+        // 5. Bump versions so waiter apps sync out deleted layouts instantly
+        versionService.bumpTables(hotelId);
     }
 
     public RestaurantTable updateTable(String id, String hotelId,

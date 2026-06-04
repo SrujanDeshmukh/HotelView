@@ -52,8 +52,14 @@ public class TableController {
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteTable(@PathVariable String id) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        tableService.deleteTable(id, hotelId);
-        return ResponseEntity.ok("Table deleted successfully");
+
+        try {
+            tableService.deleteTable(id, hotelId); // 👈 Variables match service parameters perfectly now
+            return ResponseEntity.ok("Table deleted successfully");
+        } catch (RuntimeException e) {
+            // Return a clean message if the table has an unpaid bill or doesn't belong to them
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 }
