@@ -17,7 +17,7 @@ public class CacheConfig {
         ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager();
 
         // Explicitly register your high-traffic isolation memory buckets
-        cacheManager.setCacheNames(Arrays.asList("menuCache", "menuSummaryCache"));
+        cacheManager.setCacheNames(Arrays.asList("menuCache", "menuSummaryCache","greetingCache","orderCache"));
 
         return cacheManager;
     }

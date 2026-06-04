@@ -25,7 +25,6 @@ public class CompletedOrderController {
     private final CompletedOrderService completedOrderService;
 
     @GetMapping("/list")
-    @Cacheable(value = "orderCache", key = "#root.target.getHotelId() + '-list-' + #page")
     public ResponseEntity<Page<DeliverySummaryDTO>> getCompletedList(
             @RequestParam(defaultValue = "0") int page) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -59,30 +58,30 @@ public class CompletedOrderController {
     }
 
     @GetMapping("/analytics/today")
-    @Cacheable(value = "orderCache", key = "#root.target.getHotelId() + '-today'")
-    public ResponseEntity<SalesAnalyticsDTO> getTodayAnalytics() {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+    @Cacheable(value = "orderCache", key = "#principal.name + '-today'")
+    public ResponseEntity<SalesAnalyticsDTO> getTodayAnalytics(java.security.Principal principal) { // 👈 Injected Principal parameter
+        String hotelId = principal.getName(); // 👈 Bypasses manual SecurityContextHolder lookups!
         return ResponseEntity.ok(orderService.getTodayHourlySales(hotelId));
     }
 
     @GetMapping("/analytics/week")
-    @Cacheable(value = "orderCache", key = "#root.target.getHotelId() + '-week'")
-    public ResponseEntity<SalesAnalyticsDTO> getWeeklyAnalytics() {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+    @Cacheable(value = "orderCache", key = "#principal.name + '-week'")
+    public ResponseEntity<SalesAnalyticsDTO> getWeeklyAnalytics(java.security.Principal principal) {
+        String hotelId = principal.getName();
         return ResponseEntity.ok(orderService.getCurrentWeekSales(hotelId));
     }
 
     @GetMapping("/analytics/month")
-    @Cacheable(value = "orderCache", key = "#root.target.getHotelId() + '-month'")
-    public ResponseEntity<SalesAnalyticsDTO> getMonthlyAnalytics() {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+    @Cacheable(value = "orderCache", key = "#principal.name + '-month'")
+    public ResponseEntity<SalesAnalyticsDTO> getMonthlyAnalytics(java.security.Principal principal) {
+        String hotelId = principal.getName();
         return ResponseEntity.ok(orderService.getCurrentMonthSales(hotelId));
     }
 
     @GetMapping("/analytics/year")
-    @Cacheable(value = "orderCache", key = "#root.target.getHotelId() + '-year'")
-    public ResponseEntity<SalesAnalyticsDTO> getYearlyAnalytics() {
-        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+    @Cacheable(value = "orderCache", key = "#principal.name + '-year'")
+    public ResponseEntity<SalesAnalyticsDTO> getYearlyAnalytics(java.security.Principal principal) {
+        String hotelId = principal.getName();
         return ResponseEntity.ok(orderService.getCurrentYearSales(hotelId));
     }
 

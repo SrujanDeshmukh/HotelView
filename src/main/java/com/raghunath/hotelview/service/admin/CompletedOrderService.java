@@ -48,21 +48,24 @@ public class CompletedOrderService {
 
     // API 1: Paged Fetch
     public Page<DeliverySummaryDTO> getCompletedOrdersPaged(String hotelId, int pageNumber) {
-        // ✅ Fix: Sort by checkoutDate and checkoutTime since checkoutAt field doesn't exist
+
+        // Sort by checkoutDate and checkoutTime since checkoutAt field doesn't exist
         Pageable pageable = PageRequest.of(pageNumber, 10,
                 Sort.by("checkoutDate").descending().and(Sort.by("checkoutTime").descending()));
 
-        // 1. Fetch the Entity Page
+        // 1. Fetch the Entity Page from MongoDB
         Page<CompletedOrder> entities = completeOrderRepository.findByHotelId(hotelId, pageable);
 
-        // 2. Map Entities to DeliverySummaryDTO
+        // 2. Map Entities to DeliverySummaryDTO cleanly
         return entities.map(order -> {
-            // ✅ Fix: Synthesize a LocalDateTime for the DTO by combining the date and time strings safely
             LocalDateTime dateTimeFallback = LocalDateTime.now();
+
             if (order.getCheckoutDate() != null && order.getCheckoutTime() != null) {
                 try {
                     dateTimeFallback = LocalDateTime.parse(order.getCheckoutDate() + "T" + order.getCheckoutTime());
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                    // Fallback to current time safely if date string parsing glitches
+                }
             }
 
             return DeliverySummaryDTO.builder()
