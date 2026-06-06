@@ -16,4 +16,8 @@ public class DashboardStatsDTO {
     private Double todaySalesRupees;         // 15300.0 (till now)
     private Double last24HoursSalesRupees;
     private Long last24HoursOrdersCount;
+
+    private String restaurantAddress;
+    private String restaurantContact;
+    private String restaurantUpi;
 }

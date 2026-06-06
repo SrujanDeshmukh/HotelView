@@ -400,6 +400,9 @@ public class OrderService {
                 .todaySalesRupees(todaySalesRupees)
                 .last24HoursSalesRupees(last24HoursSales)
                 .last24HoursOrdersCount(last24HoursOrders)
+                .restaurantAddress(admin.getRestaurantAddress())    // ← ADD
+                .restaurantContact(admin.getRestaurantContact())    // ← ADD
+                .restaurantUpi(admin.getRestaurantUpi())
                 .build();
     }
 

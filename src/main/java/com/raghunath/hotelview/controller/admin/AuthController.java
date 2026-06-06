@@ -8,6 +8,7 @@ import com.raghunath.hotelview.service.admin.AdminAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -145,12 +146,13 @@ public class AuthController {
     }
 
     @GetMapping("/customer/details")
-    public ResponseEntity<Page<CustomerDetails>> getAllCustomers(
+    public ResponseEntity<PagedModel<CustomerDetails>> getAllCustomers(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page) {
 
         String hotelId = authentication.getName();
-        return ResponseEntity.ok(adminAuthService.getCustomersByHotel(hotelId, page));
+        Page<CustomerDetails> result = adminAuthService.getCustomersByHotel(hotelId, page);
+        return ResponseEntity.ok(new PagedModel<>(result));
     }
 
     @PostMapping("/logout")
