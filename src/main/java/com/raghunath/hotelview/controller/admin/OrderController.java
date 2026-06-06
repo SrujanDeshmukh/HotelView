@@ -144,10 +144,13 @@ public class OrderController {
     // 9. EDIT ORDER
     @PutMapping("/kitchen/{orderId}/confirm-edit")
     public ResponseEntity<String> confirmEdit(
+            @RequestHeader("Authorization") String authHeader,
             @PathVariable String orderId,
             @RequestBody List<OrderItem> newItems) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        orderService.confirmOrderEdit(hotelId, orderId, newItems);
+        String token = authHeader.substring(7).trim();
+        String editedBy = jwtUtil.extractUserId(token);
+        orderService.confirmOrderEdit(hotelId, orderId, newItems, editedBy);
         return ResponseEntity.ok("Order updated and logs saved successfully");
     }
 

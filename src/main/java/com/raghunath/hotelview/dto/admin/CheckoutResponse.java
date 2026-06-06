@@ -20,6 +20,11 @@ public class CheckoutResponse {
     private Double grandTotal;
     private Double totalPayable;
 
+    private String restaurantName;
+    private String restaurantAddress;
+    private String restaurantContact;
+    private String restaurantUpi;
+
     @Data
     @Builder
     public static class BillItem {

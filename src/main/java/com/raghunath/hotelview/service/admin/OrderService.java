@@ -253,6 +253,10 @@ public class OrderService {
                 .items(new ArrayList<>(itemMap.values()))
                 .grandTotal(grandTotal)
                 .totalPayable(totalPayable)
+                .restaurantName(admin.getRestaurantName())        // ← ADD
+                .restaurantAddress(admin.getRestaurantAddress())  // ← ADD
+                .restaurantContact(admin.getRestaurantContact())  // ← ADD
+                .restaurantUpi(admin.getRestaurantUpi())          // ← ADD
                 .build();
     }
 
@@ -423,11 +427,10 @@ public class OrderService {
      * 9. EDIT ORDER
      */
     @Transactional
-    public void confirmOrderEdit(String hotelId, String orderId, List<OrderItem> newItems) {
+    public void confirmOrderEdit(String hotelId, String orderId, List<OrderItem> newItems, String editedBy) {
         KitchenOrder order = kitchenOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
         List<OrderEdit> editLogs = new ArrayList<>();
         String timeIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"))
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -445,7 +448,7 @@ public class OrderService {
                 editLogs.add(OrderEdit.builder()
                         .orderId(orderId)
                         .hotelId(hotelId)
-                        .editedBy(userName)
+                        .editedBy(editedBy)
                         .itemName(oldItem.getItemName())
                         .previousQty(Integer.parseInt(oldQtyStr.replaceAll("[^0-9]", "")))
                         .newQty(Integer.parseInt(newQtyStr.replaceAll("[^0-9]", "")))
@@ -465,7 +468,7 @@ public class OrderService {
                 editLogs.add(OrderEdit.builder()
                         .orderId(orderId)
                         .hotelId(hotelId)
-                        .editedBy(userName)
+                        .editedBy(editedBy)
                         .itemName(newItem.getItemName())
                         .previousQty(0)
                         .newQty(Integer.parseInt(newQtyStr.replaceAll("[^0-9]", "")))
@@ -515,6 +518,9 @@ public class OrderService {
             orderEntry.put("orderType", subOrder.getOrderType());
             orderEntry.put("finalItems", subOrder.getItems());
             orderEntry.put("totalAmount", subOrder.getTotalAmount());
+            orderEntry.put("placedBy", subOrder.getPlacedBy());       // ← ADD
+            orderEntry.put("acceptedBy", subOrder.getAcceptedBy());   // ← ADD
+            orderEntry.put("completedBy", subOrder.getCompletedBy()); // ← ADD
 
             if (editHistory.isEmpty()) {
                 orderEntry.put("editSummary", "No order edit summary available");
@@ -524,6 +530,9 @@ public class OrderService {
 
             finalTableHistory.put("Order_" + subOrderId, orderEntry);
         }
+
+        // ← ADD checkoutBy at the end
+        finalTableHistory.put("checkoutBy", completedBill.getCheckoutBy());
 
         return finalTableHistory;
     }
