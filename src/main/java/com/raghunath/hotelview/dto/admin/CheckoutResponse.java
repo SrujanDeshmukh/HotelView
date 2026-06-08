@@ -24,6 +24,7 @@ public class CheckoutResponse {
     private String restaurantAddress;
     private String restaurantContact;
     private String restaurantUpi;
+    private String restaurantLogo;
 
     @Data
     @Builder

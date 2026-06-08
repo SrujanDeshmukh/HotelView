@@ -234,6 +234,7 @@ public class OrderService {
         if (savedBill.getId() != null) {
             syncCustomerDetails(hotelId, finalBill);
             kitchenOrderRepository.deleteAll(activeOrders);
+            updateTableBill(hotelId, tableName, 0.0, true);  // ← ADD THIS
         }
 
         // 6. Build Response
@@ -257,6 +258,7 @@ public class OrderService {
                 .restaurantAddress(admin.getRestaurantAddress())  // ← ADD
                 .restaurantContact(admin.getRestaurantContact())  // ← ADD
                 .restaurantUpi(admin.getRestaurantUpi())          // ← ADD
+                .restaurantLogo(admin.getRestaurantLogo())
                 .build();
     }
 
