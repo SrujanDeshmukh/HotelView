@@ -5,6 +5,7 @@ import com.raghunath.hotelview.entity.RestaurantTable;
 import com.raghunath.hotelview.repository.KitchenOrderRepository;
 import com.raghunath.hotelview.repository.TableRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class TableService {
         return tableRepository.findAllByHotelIdOrderByTableNameAsc(hotelId);
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     public RestaurantTable saveTable(String hotelId, RestaurantTable table) {
         table.setHotelId(hotelId);
         if (table.getStatus() == null) table.setStatus("INACTIVE");
@@ -31,6 +33,8 @@ public class TableService {
         return tableRepository.save(table);
     }
 
+    // 🔥 CRITICAL ADDITION: Add to transferTableOrders
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     @Transactional
     public void transferTableOrders(String hotelId, String fromTable, String toTable) {
         // 1. Validate that the destination table exists
@@ -80,8 +84,8 @@ public class TableService {
         versionService.bumpTables(hotelId);
     }
 
-
-
+    // Add to deleteTable
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     public void deleteTable(String id, String hotelId) {
         // 1. Fetch by the true Document ID
         RestaurantTable table = tableRepository.findById(id)
@@ -104,6 +108,7 @@ public class TableService {
         versionService.bumpTables(hotelId);
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     public RestaurantTable updateTable(String id, String hotelId,
                                        RestaurantTable details) {
         RestaurantTable existingTable = tableRepository.findById(id)

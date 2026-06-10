@@ -28,7 +28,8 @@ public class MenuItemService {
     // ====================================================================
     @Caching(evict = {
             @CacheEvict(value = "menuSummaryCache", key = "#hotelIdFromToken"),
-            @CacheEvict(value = "menuCache", allEntries = true)
+            @CacheEvict(value = "menuCache", key = "#hotelIdFromToken"),
+            @CacheEvict(value = "dashboardStatsCache", key = "#hotelIdFromToken")
     })
     public String addMenuItem(MenuItemRequest request, String hotelIdFromToken) {
         LocalDateTime now = LocalDateTime.now();
@@ -69,7 +70,8 @@ public class MenuItemService {
     // ====================================================================
     @Caching(evict = {
             @CacheEvict(value = "menuSummaryCache", key = "#hotelId"),
-            @CacheEvict(value = "menuCache", allEntries = true)
+            @CacheEvict(value = "menuCache", key = "#hotelId"),
+            @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     })
     public MenuItemSummaryDTO updateMenuItem(String hotelId, String itemId, MenuItemUpdateDTO dto) {
         MenuItem existingItem = menuItemRepository.findByHotelIdAndId(hotelId, itemId)
@@ -94,9 +96,12 @@ public class MenuItemService {
     // ====================================================================
     // WRITE: Toggles item availability and flushes local caching records
     // ====================================================================
+    // WRITE: Toggles item availability and flushes local caching records
+    // ====================================================================
     @Caching(evict = {
             @CacheEvict(value = "menuSummaryCache", key = "#hotelId"),
-            @CacheEvict(value = "menuCache", allEntries = true)
+            @CacheEvict(value = "menuCache", key = "#hotelId"),
+            @CacheEvict(value = "dashboardStatsCache", key = "#hotelId") // 👈 ADD THIS LINE
     })
     public MenuItemSummaryDTO toggleAvailabilityAndReturnDto(String hotelId, String itemId, boolean available) {
         MenuItem item = toggleAvailability(hotelId, itemId, available);
@@ -116,7 +121,7 @@ public class MenuItemService {
     // ====================================================================
     // ADMINISTRATIVE ENDPOINTS: Business implementations
     // ====================================================================
-    @Cacheable(value = "menuCache", key = "#hotelId + '-' + #page + '-' + #size")
+    @Cacheable(value = "menuCache", key = "#hotelId")
     public Page<MenuItem> getAllHotelItems(String hotelId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return menuItemRepository.findByHotelIdAndIsApprovedTrue(hotelId, pageable);

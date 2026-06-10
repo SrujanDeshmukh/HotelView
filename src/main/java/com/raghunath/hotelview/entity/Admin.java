@@ -52,7 +52,8 @@ public class Admin {
     private String restaurantContact;
     private String restaurantLogo;
     private String restaurantUpi;
-    private String personalMessage;
+
+    private String greeting;
 
     private Map<String, String> platformIds = new HashMap<>();
 

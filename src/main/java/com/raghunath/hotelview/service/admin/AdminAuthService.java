@@ -7,6 +7,7 @@ import com.raghunath.hotelview.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -221,6 +222,7 @@ public class AdminAuthService {
         return mapToDTO(admin);
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     public BusinessDetailsDTO updateBusinessDetails(String hotelId, BusinessDetailsDTO updates) {
         Admin admin = adminRepository.findByHotelId(hotelId)
                 .orElseThrow(() -> new RuntimeException("Admin not found with ID: " + hotelId));
@@ -281,6 +283,38 @@ public class AdminAuthService {
                 "submissionTime", s.getSubmissionTime() != null ? s.getSubmissionTime() : "",
                 "status", s.getStatus() != null ? s.getStatus() : "PENDING"
         );
+    }
+
+    public String getGreetingForAdmin(String hotelId) {
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        // Return personal greeting if set
+        if (admin.getGreeting() != null && !admin.getGreeting().isEmpty()) {
+            return admin.getGreeting();
+        }
+
+        // Fetch global greeting from hotelview_details collection
+        Query q = new Query(Criteria.where("section_name").is("greetings_config")
+                .and("is_active").is(true));
+
+        org.bson.Document doc = mongoTemplate.findOne(q, org.bson.Document.class, "hotelview_details");
+
+        if (doc != null && doc.getString("greetingsMessage") != null) {
+            return doc.getString("greetingsMessage");
+        }
+
+        // Hardcoded fallback
+        return "Welcome! We hope you have a wonderful experience.";
+    }
+
+    public String deletePersonalGreeting(String hotelId) {
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        admin.setGreeting(null);
+        adminRepository.save(admin);
+        return "Personal greeting removed. Global greeting will be used.";
     }
 
     private BusinessDetailsDTO mapToDTO(Admin admin) {

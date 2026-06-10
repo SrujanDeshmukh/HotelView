@@ -90,6 +90,34 @@ public class AuthController {
         return ResponseEntity.ok(adminAuthService.getPaymentStatus(hotelId));
     }
 
+    @GetMapping("/greeting")
+    public ResponseEntity<Map<String, String>> getGreeting(Authentication authentication) {
+        String hotelId = authentication.getName();
+        String message = adminAuthService.getGreetingForAdmin(hotelId);
+        return ResponseEntity.ok(Map.of("message", message));
+    }
+
+    @PutMapping("/greeting")
+    public ResponseEntity<Map<String, String>> setPersonalGreeting(
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        String hotelId = authentication.getName();
+
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        admin.setGreeting(body.get("message"));
+        adminRepository.save(admin);
+
+        return ResponseEntity.ok(Map.of("status", "Greeting saved successfully."));
+    }
+
+    @DeleteMapping("/greeting")
+    public ResponseEntity<Map<String, String>> deletePersonalGreeting(Authentication authentication) {
+        String hotelId = authentication.getName();
+        String result = adminAuthService.deletePersonalGreeting(hotelId);
+        return ResponseEntity.ok(Map.of("status", result));
+    }
+
     @PostMapping("/refresh-token")
     public ResponseEntity<Map<String, Object>> refresh(@RequestBody Map<String, String> request) {
         String oldRefreshToken = request.get("refreshToken");

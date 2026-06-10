@@ -6,6 +6,8 @@ import com.raghunath.hotelview.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -167,6 +169,7 @@ public class OrderService {
     /**
      * 6. CHECKOUT ORDERS: checkout all orders.
      */
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     @Transactional
     public CheckoutResponse checkoutOrders(String hotelId, CheckoutRequest request, String checkoutBy) {
         // 1. Subscription Check
@@ -265,6 +268,7 @@ public class OrderService {
     /**
      * 7. INSTANT CHECKOUT
      */
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     @Transactional
     public CheckoutResponse instantOrderAndCheckout(String hotelId, InstantCheckoutRequest request, String actualLoggedInUser) {
         // 1. Subscription Check
@@ -337,6 +341,7 @@ public class OrderService {
     /**
      * 8. FETCH DASHBOARD STATS
      */
+    @Cacheable(value = "dashboardStatsCache", key = "#hotelId")
     public DashboardStatsDTO getDashboardStats(String hotelId) {
         ZonedDateTime nowIST = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         String todayDate = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE);

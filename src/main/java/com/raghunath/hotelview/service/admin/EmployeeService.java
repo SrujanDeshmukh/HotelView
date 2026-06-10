@@ -6,6 +6,7 @@ import com.raghunath.hotelview.repository.EmployeeRefreshTokenRepository;
 import com.raghunath.hotelview.repository.EmployeeRepository;
 import com.raghunath.hotelview.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     public String registerEmployee(Employee emp, String hotelId) {
         if (employeeRepository.existsByUsername(emp.getUsername())) {
             throw new RuntimeException("Username already taken!");
@@ -112,6 +114,7 @@ public class EmployeeService {
         );
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     public String updateEmployee(String empId, String hotelId, Employee details) {
         Employee existingEmp = employeeRepository.findById(empId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
@@ -139,6 +142,7 @@ public class EmployeeService {
         return "Employee " + existingEmp.getName() + " updated successfully";
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     public void deleteEmployee(String empId, String hotelId) {
         Employee emp = employeeRepository.findById(empId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
