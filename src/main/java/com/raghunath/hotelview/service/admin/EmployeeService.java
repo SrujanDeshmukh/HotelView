@@ -1,7 +1,9 @@
 package com.raghunath.hotelview.service.admin;
 
+import com.raghunath.hotelview.entity.Admin;
 import com.raghunath.hotelview.entity.Employee;
 import com.raghunath.hotelview.entity.EmployeeRefreshToken;
+import com.raghunath.hotelview.repository.AdminRepository;
 import com.raghunath.hotelview.repository.EmployeeRefreshTokenRepository;
 import com.raghunath.hotelview.repository.EmployeeRepository;
 import com.raghunath.hotelview.security.JwtUtil;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,16 +22,48 @@ import java.util.Map;
 public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
+    private final AdminRepository adminRepository;
     private final EmployeeRefreshTokenRepository employeeRefreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
     @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
+    @Transactional
     public String registerEmployee(Employee emp, String hotelId) {
+        // 1. Check if username is already taken
         if (employeeRepository.existsByUsername(emp.getUsername())) {
             throw new RuntimeException("Username already taken!");
         }
 
+        // 2. Fetch Admin Profile to determine planType tier rules
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin context profile not found for hotel: " + hotelId));
+
+        String plan = admin.getPlanType() != null ? admin.getPlanType().trim() : "Free Tier";
+        String targetRole = emp.getRole() != null ? emp.getRole().toUpperCase().trim() : "";
+
+        // 3. Count currently registered staff for this specific hotel
+        long currentWaiters = employeeRepository.countByHotelIdAndRole(hotelId, "WAITER");
+        long currentChefs = employeeRepository.countByHotelIdAndRole(hotelId, "CHEF");
+
+        // 4. Evaluate Tier Limits
+        if (plan.equalsIgnoreCase("Free Tier") || plan.equalsIgnoreCase("Standard")) {
+            if (targetRole.equals("WAITER") && currentWaiters >= 2) {
+                throw new RuntimeException("Upgrade to premium plan to add more Waiter or Chef");
+            }
+            if (targetRole.equals("CHEF") && currentChefs >= 1) {
+                throw new RuntimeException("Upgrade to premium plan to add more Waiter or Chef");
+            }
+        } else if (plan.equalsIgnoreCase("Premium")) {
+            if (targetRole.equals("WAITER") && currentWaiters >= 4) {
+                throw new RuntimeException("You have reached the maximum limit of 4 Waiters allowed on the Premium tier.");
+            }
+            if (targetRole.equals("CHEF") && currentChefs >= 2) {
+                throw new RuntimeException("You have reached the maximum limit of 2 Chefs allowed on the Premium tier.");
+            }
+        }
+
+        // 5. Save safe verified record
         emp.setHotelId(hotelId);
         emp.setPassword(passwordEncoder.encode(emp.getPassword()));
         emp.setActive(true);

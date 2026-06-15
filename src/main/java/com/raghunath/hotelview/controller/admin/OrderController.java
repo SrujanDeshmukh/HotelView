@@ -81,6 +81,21 @@ public class OrderController {
         return ResponseEntity.ok("Order sent to kitchen");
     }
 
+    @PostMapping("/confirm/custom-order")
+    public ResponseEntity<String> placeCustomItemOrder(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody CustomKitchenOrderRequest request) {
+
+        // Extract authorization payload properties cleanly
+        String token = authHeader.substring(7).trim();
+        String hotelId = jwtUtil.extractHotelId(token);
+        String waiterId = jwtUtil.extractUserId(token);
+
+        String result = orderService.confirmCustomItemOrder(hotelId, request, waiterId);
+
+        return ResponseEntity.ok(result);
+    }
+
     // 4. PLACE HOME DELIVERY ORDER
     @PostMapping("/confirm/delivery")
     public ResponseEntity<String> confirmHomeDelivery(@Valid @RequestBody DeliveryRequest request) {
@@ -118,6 +133,25 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/direct-checkout")
+    public ResponseEntity<CheckoutResponse> directCheckout(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody DirectOrderRequest request) {
+
+        // 1. Extract raw token string cleanly
+        String token = authHeader.substring(7).trim();
+
+        // 2. Extract multi-tenant identities from your verified JWT claims
+        String hotelId = jwtUtil.extractHotelId(token);
+        String checkoutBy = jwtUtil.extractUserId(token);
+
+        // 3. Delegate to the uniform business handler layer
+        CheckoutResponse response = orderService.checkoutDirectOrder(hotelId, request, checkoutBy);
+
+        return ResponseEntity.ok(response);
+    }
+
+
     // 7. INSTANT CHECKOUT
     @PostMapping("/instant/checkout")
     public ResponseEntity<CheckoutResponse> processInstantOrder(
@@ -130,6 +164,21 @@ public class OrderController {
         String actualLoggedInUser = jwtUtil.extractUserId(token);
 
         CheckoutResponse response = orderService.instantOrderAndCheckout(hotelId, request, actualLoggedInUser);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/instant/direct-checkout")
+    public ResponseEntity<CheckoutResponse> processInstantCustomOrder(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody InstantCheckoutRequestNew request) {
+
+        String token = authHeader.substring(7).trim();
+
+        String hotelId = jwtUtil.extractHotelId(token);
+        String actualLoggedInUser = jwtUtil.extractUserId(token);
+
+        CheckoutResponse response = orderService.instantCustomOrderAndCheckout(hotelId, request, actualLoggedInUser);
 
         return ResponseEntity.ok(response);
     }

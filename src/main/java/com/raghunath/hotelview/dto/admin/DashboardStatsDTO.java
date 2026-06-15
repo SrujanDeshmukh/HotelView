@@ -10,6 +10,7 @@ public class DashboardStatsDTO {
     private String planType;
     private Long activeTablesCount;         // 12 ACTIVE
     private Long HomeDeliveriesCount;  // 5 PENDING
+    private Long InstantCount;
     private Long completedOrdersTodayCount;  // 128 TODAY
     private Long employeeOnlineCount;        // 14 ONLINE
     private Long totalItemsCount;            // 45 TOTAL

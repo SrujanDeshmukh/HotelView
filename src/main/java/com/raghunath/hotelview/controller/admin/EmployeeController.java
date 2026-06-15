@@ -22,7 +22,13 @@ public class EmployeeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> addEmployee(@RequestBody Employee employee) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(employeeService.registerEmployee(employee, hotelId));
+        try {
+            String response = employeeService.registerEmployee(employee, hotelId);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            // Returns a 400 Bad Request alongside your explicit upgrade prompt text string
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/login")

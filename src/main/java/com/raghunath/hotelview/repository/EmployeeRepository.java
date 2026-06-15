@@ -12,4 +12,6 @@ public interface EmployeeRepository extends MongoRepository<Employee, String> {
 
 
     Long countByHotelIdAndIsActive(String hotelId, boolean b);
+
+    long countByHotelIdAndRole(String hotelId, String role);
 }

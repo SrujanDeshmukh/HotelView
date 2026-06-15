@@ -116,6 +116,72 @@ public class OrderService {
         return "Order sent to kitchen";
     }
 
+    @Transactional
+    public String confirmCustomItemOrder(String hotelId, CustomKitchenOrderRequest request, String waiterId) {
+        // 1. Subscription Check (Mirrors original logic perfectly)
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
+            throw new RuntimeException("Kindly upgrade to the Standard or Premium plan.");
+        }
+
+        // 2. Fallback Defaults & Dynamic Validation
+        String tableName = org.springframework.util.StringUtils.hasText(request.getTableName()) ? request.getTableName() : "Counter";
+        String orderType = org.springframework.util.StringUtils.hasText(request.getOrderType()) ? request.getOrderType() : "TABLE";
+
+        if (orderType.equals("TABLE")) {
+            validateTableExists(hotelId, tableName);
+        }
+
+        if (!org.springframework.util.StringUtils.hasText(request.getItemName())) {
+            throw new RuntimeException("Custom item name cannot be empty");
+        }
+
+        Double total = (request.getSubTotal() != null) ? request.getSubTotal() : 0.0;
+        ZonedDateTime nowIST = getISTNow();
+
+        // 3. Build the OrderItem DTO dynamically on-the-fly
+        // Note: Converted quantity integer to String to prevent type casting bugs on your schema!
+        OrderItem customItem = OrderItem.builder()
+                .itemName(request.getItemName())
+                .quantity(request.getQuantity() != null ? String.valueOf(request.getQuantity()) : "1")
+                .price(request.getQuantity() != null && request.getQuantity() > 0 ? total / request.getQuantity() : total)
+                .subTotal(total)
+                .build();
+
+        List<OrderItem> itemsList = new ArrayList<>();
+        itemsList.add(customItem);
+
+        // 4. Construct KitchenOrder entity matching image_c49357.png
+        KitchenOrder kOrder = KitchenOrder.builder()
+                .hotelId(hotelId)
+                .tableName(tableName)
+                .orderType(orderType)
+                .items(itemsList)
+                .totalAmount(total)
+                .status("PENDING")
+                .comments(request.getComment() != null ? request.getComment() : "")
+                .placedBy(waiterId)
+                .createdDate(nowIST.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .createdTime(nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
+                .build();
+
+        // 5. Database Save & Visual Sync Operations
+        kitchenOrderRepository.save(kOrder);
+
+        // Clear layout drafts if they exist for this section
+        draftRepository.findByHotelIdAndTableName(hotelId, tableName).ifPresent(draftRepository::delete);
+
+        // Update real-time metrics across your multi-tenant layouts
+        if (orderType.equals("TABLE")) {
+            updateTableVisualStatus(hotelId, tableName, "PENDING");
+            updateTableBill(hotelId, tableName, total, false);
+        }
+
+        return "Custom item order sent to kitchen successfully";
+    }
+
     private void validateTableExists(String hotelId, String tableName) {
         if (!tableRepository.existsByHotelIdAndTableName(hotelId, tableName)) {
             log.error("VALIDATION_FAILED: Table {} not found for Hotel {}", tableName, hotelId);
@@ -338,6 +404,234 @@ public class OrderService {
                 .build();
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
+    @Transactional
+    public CheckoutResponse instantCustomOrderAndCheckout(String hotelId, InstantCheckoutRequestNew request, String actualLoggedInUser) {
+        // 1. Subscription Plan Validation
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
+            throw new RuntimeException("Kindly upgrade to the Standard or Premium plan.");
+        }
+
+        List<OrderItem> items = request.getItems();
+        if (items == null || items.isEmpty()) {
+            throw new RuntimeException("Cannot process an instant checkout with an empty items list");
+        }
+
+        // Mathematical Computations
+        Double grandTotal = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
+        Double discountPercent = request.getDiscountPercent() != null ? request.getDiscountPercent() : 0.0;
+        Double discountAmount = (grandTotal * discountPercent) / 100.0;
+        Double totalPayable = Math.max(0.0, grandTotal - discountAmount);
+
+        ZonedDateTime nowIST = getISTNow();
+        String currentDateStr = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String currentTimeStr = nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+
+        // 2. Build Sanitized In-Memory OrderItems List (Ensuring clean Strings)
+        List<OrderItem> sanitizedItems = items.stream().map(item -> {
+            String qtyStr = item.getQuantity() != null ? String.valueOf(item.getQuantity()).trim() : "1";
+            return OrderItem.builder()
+                    .itemName(item.getItemName())
+                    .quantity(qtyStr)
+                    .price(item.getPrice() != null ? item.getPrice() : 0.0)
+                    .subTotal(item.getSubTotal())
+                    .build();
+        }).toList();
+
+        // 3. Construct the Transient KitchenOrder Document Wrapper
+        KitchenOrder transientOrder = KitchenOrder.builder()
+                .id(new org.bson.types.ObjectId().toString())
+                .hotelId(hotelId)
+                .tableName(null) // Matching production null states
+                .orderType("INSTANT")
+                .items(sanitizedItems)
+                .totalAmount(grandTotal)
+                .status("COMPLETED")
+                .placedBy(actualLoggedInUser)
+                .completedBy(actualLoggedInUser)
+                .updatedAt(nowIST.toLocalDateTime())
+                .createdDate(currentDateStr)
+                .createdTime(currentTimeStr)
+                .build();
+
+        // 4. Map Response Items (Matching your exact production output model layouts)
+        List<CheckoutResponse.BillItem> billItems = sanitizedItems.stream()
+                .map(item -> CheckoutResponse.BillItem.builder()
+                        .itemName(item.getItemName())
+                        .quantity(item.getQuantity()) // Keep as String matching production
+                        .price(item.getSubTotal())   // Matches production layout (quantity * unit price)
+                        .build())
+                .toList();
+
+        // 5. Construct and Save Final CompletedOrder Collection Entry (Enforcing exact production nulls)
+        CompletedOrder finalBill = CompletedOrder.builder()
+                .hotelId(hotelId)
+                .orderType("INSTANT")
+                .customerName(null)
+                .customerMobile(null)
+                .customerAddress(null)
+                .allOrders(Collections.singletonList(transientOrder))
+                .grandTotal(grandTotal)
+                .paymentStatus("PAID")
+                .discountPercent(discountPercent)
+                .discountAmount(discountAmount)
+                .totalPayable(totalPayable)
+                .checkoutBy(actualLoggedInUser)
+                .checkoutDate(currentDateStr)
+                .checkoutTime(currentTimeStr)
+                .build();
+
+        CompletedOrder savedBill = completeOrderRepository.save(finalBill);
+
+        // 6. Build & Return Standardized CheckoutResponse Payload (Cleaned up to match standard logging)
+        String fullId = savedBill.getId();
+        String shortId = (fullId != null && fullId.length() > 6) ? fullId.substring(fullId.length() - 6) : fullId;
+
+        return CheckoutResponse.builder()
+                .id(fullId)
+                .shortId(shortId)
+                .checkoutDate(finalBill.getCheckoutDate())
+                .checkoutTime(finalBill.getCheckoutTime())
+                .orderType("INSTANT")
+                .items(billItems)
+                .grandTotal(grandTotal)
+                .totalPayable(totalPayable)
+                .build();
+    }
+
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
+    @Transactional
+    public CheckoutResponse checkoutDirectOrder(String hotelId, DirectOrderRequest request, String checkoutBy) {
+        // 1. Subscription Check (Mirroring standard checkouts)
+        Admin admin = adminRepository.findByHotelId(hotelId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (getISTNow().toLocalDateTime().isAfter(admin.getSubscriptionExpiry())) {
+            throw new RuntimeException("Your subscription plan has ended.");
+        }
+
+        // 2. Validate Direct Request Metrics
+        if (request.getTotalAmount() == null || request.getTotalAmount() <= 0) {
+            throw new RuntimeException("Invalid total amount for direct checkout");
+        }
+        if (!org.springframework.util.StringUtils.hasText(request.getItemName())) {
+            throw new RuntimeException("Item name cannot be empty for manual logging");
+        }
+
+        Double grandTotal = request.getTotalAmount();
+        Double discountPercent = (request.getDiscount() != null) ? request.getDiscount() : 0.0;
+        Double discountAmount = (grandTotal * discountPercent) / 100;
+        Double totalPayable = grandTotal - discountAmount;
+
+        ZonedDateTime nowIST = getISTNow();
+        String currentDateStr = nowIST.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String currentTimeStr = nowIST.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+
+        // 3. Construct Raw Items Array List to match your standard inner model formats
+        List<com.raghunath.hotelview.dto.admin.OrderItem> inlineItems = new ArrayList<>();
+
+        // Use the exact setter or builder pattern that your OrderItem class provides
+        inlineItems.add(com.raghunath.hotelview.dto.admin.OrderItem.builder()
+                .itemName(request.getItemName())
+                .quantity(request.getQuantity() != null ? String.valueOf(request.getQuantity()) : "1")
+                .price(0.0) // Kept at zero or null per requirement
+                .subTotal(grandTotal)
+                .build());
+
+        // 4. Construct Nested KitchenOrder Object Structure matching standard schema exactly
+        KitchenOrder mockOrder = KitchenOrder.builder()
+                .id(new org.bson.types.ObjectId().toString())
+                .hotelId(hotelId)
+                .tableName(org.springframework.util.StringUtils.hasText(request.getTableName()) ? request.getTableName() : "Counter")
+                .orderType(org.springframework.util.StringUtils.hasText(request.getOrderType()) ? request.getOrderType() : "TAKEAWAY")
+                .items(inlineItems)
+                .totalAmount(grandTotal)
+                .status("COMPLETED")
+                .placedBy(checkoutBy)
+                .completedBy(checkoutBy)
+                .updatedAt(nowIST.toLocalDateTime())
+                .createdDate(currentDateStr)
+                .createdTime(currentTimeStr)
+                .build();
+
+        List<KitchenOrder> allOrdersList = new ArrayList<>();
+        allOrdersList.add(mockOrder);
+
+        // 5. Build and Save Completed Order
+        CompletedOrder finalBill = CompletedOrder.builder()
+                .hotelId(hotelId)
+                .orderType(mockOrder.getOrderType())
+                .tableName(mockOrder.getTableName())
+                .customerName(org.springframework.util.StringUtils.hasText(request.getCustomerName()) ? request.getCustomerName() : "Walk-in Guest")
+                .customerMobile(org.springframework.util.StringUtils.hasText(request.getCustomerMobile()) ? request.getCustomerMobile() : "0000000000")
+                .customerAddress(org.springframework.util.StringUtils.hasText(request.getCustomerAddress()) ? request.getCustomerAddress() : "N/A")
+                .allOrders(allOrdersList)
+                .grandTotal(grandTotal)
+                .paymentStatus("PAID")
+                .discountPercent(discountPercent)
+                .discountAmount(discountAmount)
+                .totalPayable(totalPayable)
+                .checkoutBy(checkoutBy)
+                .checkoutDate(currentDateStr)
+                .checkoutTime(currentTimeStr)
+                .build();
+
+        CompletedOrder savedBill = completeOrderRepository.save(finalBill);
+
+        // 6. Cleanup and Sync
+        if (savedBill.getId() != null) {
+            syncCustomerDetails(hotelId, finalBill);
+            if (org.springframework.util.StringUtils.hasText(request.getTableName())) {
+                updateTableBill(hotelId, request.getTableName(), 0.0, true);
+            }
+        }
+
+        // 7. Build Uniform Response Object
+        String fullId = savedBill.getId();
+        String shortId = (fullId != null && fullId.length() > 6) ? fullId.substring(fullId.length() - 6) : fullId;
+
+        // Convert string quantity safely into integer to prevent type conversion errors during response building
+        int parsedQuantity = 1;
+        try {
+            parsedQuantity = Integer.parseInt(mockOrder.getItems().get(0).getQuantity());
+        } catch (NumberFormatException e) {
+            // Fallback safety parameter if a dirty string passes through
+            if (request.getQuantity() != null) {
+                parsedQuantity = request.getQuantity();
+            }
+        }
+
+        List<CheckoutResponse.BillItem> responseItems = new ArrayList<>();
+        responseItems.add(CheckoutResponse.BillItem.builder()
+                .itemName(request.getItemName())
+                .quantity(String.valueOf(parsedQuantity)) // ✔️ Cleanly casted primitive int value applied here
+                .price(grandTotal)
+                .build());
+
+        return CheckoutResponse.builder()
+                .id(fullId)
+                .shortId(shortId)
+                .checkoutDate(finalBill.getCheckoutDate())
+                .checkoutTime(finalBill.getCheckoutTime())
+                .orderType(finalBill.getOrderType())
+                .tableName(finalBill.getTableName())
+                .customerName(finalBill.getCustomerName())
+                .customerMobile(finalBill.getCustomerMobile())
+                .customerAddress(finalBill.getCustomerAddress())
+                .items(responseItems)
+                .grandTotal(grandTotal)
+                .totalPayable(totalPayable)
+                .restaurantName(admin.getRestaurantName())
+                .restaurantAddress(admin.getRestaurantAddress())
+                .restaurantContact(admin.getRestaurantContact())
+                .restaurantUpi(admin.getRestaurantUpi())
+                .restaurantLogo(admin.getRestaurantLogo())
+                .build();
+    }
+
     /**
      * 8. FETCH DASHBOARD STATS
      */
@@ -363,6 +657,9 @@ public class OrderService {
         List<String> deliveryTypes = List.of("HOME", "PARCEL");
         Long homeAndParcelOrdersToday = completeOrderRepository.countByHotelIdAndOrderTypeInAndCheckoutDate(
                 hotelId, deliveryTypes, todayDate);
+
+        List<String> deliveryType = List.of("INSTANT");
+        Long instantOrdersToday = completeOrderRepository.countByHotelIdAndOrderTypeInAndCheckoutDate(hotelId, deliveryType, todayDate);
 
         Long employeeCount = employeeRepository.countByHotelIdAndIsActive(hotelId, true);
         Long totalItems = menuItemRepository.countByHotelId(hotelId);
@@ -403,6 +700,7 @@ public class OrderService {
         return DashboardStatsDTO.builder()
                 .activeTablesCount(activeTablesCount)
                 .HomeDeliveriesCount(homeAndParcelOrdersToday)
+                .InstantCount(instantOrdersToday)
                 .completedOrdersTodayCount(completedTodayCount)
                 .employeeOnlineCount(employeeCount)
                 .totalItemsCount(totalItems)
@@ -525,23 +823,86 @@ public class OrderService {
             orderEntry.put("orderType", subOrder.getOrderType());
             orderEntry.put("finalItems", subOrder.getItems());
             orderEntry.put("totalAmount", subOrder.getTotalAmount());
-            orderEntry.put("placedBy", subOrder.getPlacedBy());       // ← ADD
-            orderEntry.put("acceptedBy", subOrder.getAcceptedBy());   // ← ADD
-            orderEntry.put("completedBy", subOrder.getCompletedBy()); // ← ADD
+
+            // Resolve names for the sub-order lifecycles instead of returning raw Hex IDs
+            orderEntry.put("placedBy", getUserRealName(subOrder.getPlacedBy()));
+            orderEntry.put("acceptedBy", getUserRealName(subOrder.getAcceptedBy()));
+            orderEntry.put("completedBy", getUserRealName(subOrder.getCompletedBy()));
 
             if (editHistory.isEmpty()) {
                 orderEntry.put("editSummary", "No order edit summary available");
             } else {
-                orderEntry.put("editSummary", editHistory);
+                // Transform edit history maps dynamically to swap "editedBy" IDs for names
+                List<Map<String, Object>> dynamicEditSummaryList = new ArrayList<>();
+                for (OrderEdit edit : editHistory) {
+                    Map<String, Object> editMap = new LinkedHashMap<>();
+                    editMap.put("id", edit.getId());
+                    editMap.put("orderId", edit.getOrderId());
+                    editMap.put("hotelId", edit.getHotelId());
+
+                    // Resolve the dynamic editor ID into their plain text name string here!
+                    editMap.put("editedBy", getUserRealName(edit.getEditedBy()));
+
+                    editMap.put("itemName", edit.getItemName());
+                    editMap.put("previousQty", edit.getPreviousQty());
+                    editMap.put("newQty", edit.getNewQty());
+                    editMap.put("delta", edit.getDelta());
+                    editMap.put("timestamp", edit.getTimestamp());
+
+                    dynamicEditSummaryList.add(editMap);
+                }
+                orderEntry.put("editSummary", dynamicEditSummaryList);
             }
 
             finalTableHistory.put("Order_" + subOrderId, orderEntry);
         }
 
-        // ← ADD checkoutBy at the end
-        finalTableHistory.put("checkoutBy", completedBill.getCheckoutBy());
+        // Resolve checkout context identity name at root level termination
+        finalTableHistory.put("checkoutBy", getUserRealName(completedBill.getCheckoutBy()));
 
         return finalTableHistory;
+    }
+
+    /**
+     * Helper method to perform cross-collection name resolution for dynamic user IDs.
+     * Searches the Employee collection first, falls back to Admin, then defaults to the ID.
+     */
+    private String getUserRealName(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            return "N/A";
+        }
+
+        // 1. Check if the action was executed by an Employee
+        org.bson.Document employeeDoc = mongoTemplate.findOne(
+                new Query(Criteria.where("_id").is(userId)),
+                org.bson.Document.class,
+                "employees" // Make sure this matches your exact MongoDB employee collection name
+        );
+        if (employeeDoc != null && employeeDoc.containsKey("name")) {
+            return employeeDoc.getString("name");
+        }
+
+        // 2. Fallback: Check if the action was executed by an Admin user
+        org.bson.Document adminDoc = mongoTemplate.findOne(
+                new Query(Criteria.where("_id").is(userId)),
+                org.bson.Document.class,
+                "admins" // Make sure this matches your exact MongoDB admin collection name
+        );
+        if (adminDoc != null && adminDoc.containsKey("name")) {
+            return adminDoc.getString("name");
+        }
+
+        // 3. Fallback: Check Admin by user handling custom alternative identifier mappings if applicable
+        Admin adminByHotel = mongoTemplate.findOne(
+                new Query(Criteria.where("hotelId").is(userId)),
+                Admin.class
+        );
+        if (adminByHotel != null) {
+            return adminByHotel.getName();
+        }
+
+        // If no record is found anywhere, return the original ID safely instead of crashing
+        return userId;
     }
 
     public void processExternalOrder(OrderWebhookDTO dto) {
