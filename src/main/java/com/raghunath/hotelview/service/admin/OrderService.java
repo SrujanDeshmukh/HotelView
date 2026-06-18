@@ -79,6 +79,7 @@ public class OrderService {
     /**
      * 3. CONFIRM ORDER: Moves items to the Kitchen.
      */
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     @Transactional
     public String confirmOrder(String hotelId, String tableName, List<OrderItem> items, String waiterId, String comment) {
         // 1. Subscription Check
@@ -116,6 +117,7 @@ public class OrderService {
         return "Order sent to kitchen";
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     @Transactional
     public String confirmCustomItemOrder(String hotelId, CustomKitchenOrderRequest request, String waiterId) {
         // 1. Subscription Check (Mirrors original logic perfectly)
@@ -192,6 +194,7 @@ public class OrderService {
     /**
      * 4. CONFIRM HOME DELIVERY ORDER: Moves items to the Kitchen.
      */
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     @Transactional
     public String confirmHomeDelivery(String hotelId, List<OrderItem> items, String waiterId, String orderType) {
         // 1. Subscription Check

@@ -12,6 +12,7 @@ import com.raghunath.hotelview.repository.TableRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -164,6 +165,7 @@ public class CompletedOrderService {
         }).collect(Collectors.toList());
     }
 
+    @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
     @Transactional
     public void softDeleteOrders(String hotelId, List<String> orderIds) {
         // 1. Fetch orders from both sources
