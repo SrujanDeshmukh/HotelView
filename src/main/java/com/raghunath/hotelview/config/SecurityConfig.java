@@ -114,12 +114,18 @@ public class SecurityConfig {
                                 "/api/v1/orders/checkout",
                                 "/api/v1/orders/direct-checkout",
                                 "/api/v1/orders/instant/checkout",
-                                "/api//v1/orders/instant/direct-checkout",
+                                "/api/v1/orders/instant/direct-checkout",
                                 "/api/v1/orders/completed/transfer/**",
                                 "/api/v1/orders/completed/delivery/today",
                                 "/api/v1/orders/completed/**",
                                 "/api/v1/orders/dashboard/stats"
                         ).hasAnyRole("ADMIN", "WAITER")
+
+                        // Allow both ADMIN and WAITER roles to execute GET requests
+                        .requestMatchers(HttpMethod.GET, "/api/v1/receipt-settings/**").hasAnyRole("ADMIN", "WAITER")
+
+                        // Restrict POST requests strictly to the ADMIN role
+                        .requestMatchers(HttpMethod.POST, "/api/v1/receipt-settings/**").hasRole("ADMIN")
 
                         // 6. MENU & SYNC OPERATIONS
                         .requestMatchers("/api/v1/menu/version").hasAnyRole("ADMIN", "WAITER", "CHEF")

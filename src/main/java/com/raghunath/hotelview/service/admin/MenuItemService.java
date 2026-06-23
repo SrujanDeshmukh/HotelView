@@ -33,11 +33,16 @@ public class MenuItemService {
     })
     public String addMenuItem(MenuItemRequest request, String hotelIdFromToken) {
         LocalDateTime now = LocalDateTime.now();
+
+        String processedShortCode = StringUtils.hasText(request.getShortCode())
+                ? request.getShortCode().trim().toUpperCase()
+                : generateFallbackShortCode(request.getName());
+
         MenuItem item = MenuItem.builder()
                 .hotelId(hotelIdFromToken)
                 .category(request.getCategory())
                 .name(request.getName())
-                .shortCode(request.getShortCode())
+                .shortCode(processedShortCode)
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .isVeg(request.getIsVeg())
@@ -81,7 +86,12 @@ public class MenuItemService {
         existingItem.setCategory(dto.getCategory());
         existingItem.setPrice(dto.getPrice());
         existingItem.setDescription(dto.getDescription());
-        existingItem.setShortCode(dto.getShortCode());
+
+        String processedShortCode = StringUtils.hasText(dto.getShortCode())
+                ? dto.getShortCode().trim().toUpperCase()
+                : generateFallbackShortCode(dto.getName());
+        existingItem.setShortCode(processedShortCode);
+
         existingItem.setIsVeg(dto.getIsVeg() != null ? dto.getIsVeg() : existingItem.getIsVeg());
         existingItem.setIsAvailable(dto.getIsAvailable() != null ? dto.getIsAvailable() : existingItem.getIsAvailable());
         existingItem.setImageUrl(dto.getImageUrl());
@@ -91,6 +101,15 @@ public class MenuItemService {
 
         MenuItem savedItem = menuItemRepository.save(existingItem);
         return convertToSummaryDto(savedItem);
+    }
+
+    private String generateFallbackShortCode(String itemName) {
+        if (!StringUtils.hasText(itemName)) {
+            return "ITEM_" + System.currentTimeMillis() % 10000;
+        }
+        // Remove all whitespace and non-alphanumeric characters, convert to uppercase
+        String cleanName = itemName.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+        return cleanName.length() > 10 ? cleanName.substring(0, 10) : cleanName;
     }
 
     // ====================================================================
