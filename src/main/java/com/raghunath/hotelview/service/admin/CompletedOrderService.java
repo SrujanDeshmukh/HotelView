@@ -272,6 +272,7 @@ public class CompletedOrderService {
      * 12. DELETE COMPLETED ORDER: Completely wipes out a bill document from the database collections
      * and reverses the customer's aggregate stats to keep financial indicators synchronized.
      */
+
     @Caching(evict = {
             @CacheEvict(value = "dashboardStatsCache", key = "#hotelId"),
             @CacheEvict(value = "orderCache", key = "#hotelId + '-today'"),
