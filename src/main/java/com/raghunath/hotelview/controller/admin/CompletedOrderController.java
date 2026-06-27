@@ -49,6 +49,24 @@ public class CompletedOrderController {
         return ResponseEntity.ok(completedOrderService.getTodayCompletedHomeDeliveries(hotelId));
     }
 
+    // --- EDIT COMPLETED ORDER DETAILS & TOTALS ---
+    @PutMapping("/{id}/edit")
+    public ResponseEntity<String> editCompletedOrder(
+            @PathVariable String id,
+            @RequestBody com.raghunath.hotelview.dto.admin.CompletedOrderEditDTO editDto) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        completedOrderService.editCompletedOrderDetails(hotelId, id, editDto);
+        return ResponseEntity.ok("Completed order items quantity and totals updated successfully.");
+    }
+
+    // --- PERMANENTLY DELETE COMPLETED ORDER ---
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteCompletedOrder(@PathVariable String id) {
+        String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();
+        completedOrderService.deleteCompletedOrderById(hotelId, id);
+        return ResponseEntity.ok("Completed order deleted successfully and customer tracking reversed.");
+    }
+
     @DeleteMapping("/delete-multiple")
     public ResponseEntity<String> deleteOrders(@RequestBody List<String> orderIds) {
         String hotelId = SecurityContextHolder.getContext().getAuthentication().getName();

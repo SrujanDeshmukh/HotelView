@@ -1,9 +1,12 @@
 package com.raghunath.hotelview.service.admin;
 
+import com.raghunath.hotelview.dto.admin.CompletedOrderEditDTO;
 import com.raghunath.hotelview.dto.admin.DeliverySummaryDTO;
+import com.raghunath.hotelview.dto.admin.OrderItem;
 import com.raghunath.hotelview.dto.admin.ReceiptResponse;
 import com.raghunath.hotelview.entity.Admin;
 import com.raghunath.hotelview.entity.CompletedOrder;
+import com.raghunath.hotelview.entity.CustomerDetails;
 import com.raghunath.hotelview.entity.KitchenOrder;
 import com.raghunath.hotelview.repository.AdminRepository;
 import com.raghunath.hotelview.repository.CompleteOrderRepository;
@@ -13,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,8 +24,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -163,6 +169,138 @@ public class CompletedOrderService {
                     .checkoutAt(dateTimeFallback)
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 11. EDIT COMPLETED ORDER: Fetches from DB, loops through the nested array items,
+     * updates matching item quantities (stored as Strings), recalculates sub-totals/grand-totals,
+     * supports a direct manual totalPayable override, and balances customer loyalty spending.
+     */
+    /**
+     * 11. DYNAMIC EDIT COMPLETED ORDER: Fetches from DB, allows quantity updates ONLY for existing items,
+     * recalculates item subTotals, and dynamically computes totalPayable using the new discount metrics
+     * if no manual custom total payable override is provided.
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "dashboardStatsCache", key = "#hotelId"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-today'"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-week'"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-month'"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-year'")
+    })
+    @Transactional
+    public void editCompletedOrderDetails(String hotelId, String orderId, CompletedOrderEditDTO editDto) {
+        // 1. Fetch original order from DB
+        CompletedOrder order = completeOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Completed order record not found"));
+
+        if (!order.getHotelId().equals(hotelId)) {
+            throw new RuntimeException("Unauthorized action on this resource workspace");
+        }
+
+        double oldTotalPayable = order.getTotalPayable() != null ? order.getTotalPayable() : 0.0;
+
+        if (order.getAllOrders() == null || order.getAllOrders().isEmpty()) {
+            throw new RuntimeException("This completed order contains no inner order structural array elements");
+        }
+
+        List<OrderItem> dbItems = order.getAllOrders().get(0).getItems();
+
+        // 2. Map and update matching item quantities strictly (Only if items array is passed)
+        if (editDto.getItems() != null && !editDto.getItems().isEmpty()) {
+            for (CompletedOrderEditDTO.UpdatedItemPayload incomingItem : editDto.getItems()) {
+                OrderItem originalDbItem = dbItems.stream()
+                        .filter(item -> item.getItemName().equalsIgnoreCase(incomingItem.getItemName()))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("Item '" + incomingItem.getItemName() +
+                                "' does not exist in the original bill. Only modifications are allowed."));
+
+                if (incomingItem.getQuantity() <= 0) {
+                    throw new RuntimeException("Quantity for '" + incomingItem.getItemName() + "' must be greater than 0.");
+                }
+
+                int oldQty = Integer.parseInt(originalDbItem.getQuantity().replaceAll("[^0-9]", ""));
+                double unitPrice = originalDbItem.getSubTotal() / oldQty;
+
+                originalDbItem.setQuantity(String.valueOf(incomingItem.getQuantity()));
+                originalDbItem.setSubTotal(unitPrice * incomingItem.getQuantity());
+                originalDbItem.setPrice(unitPrice);
+            }
+        }
+
+        // 3. Financial math recalculations
+        double newGrandTotal = dbItems.stream().mapToDouble(OrderItem::getSubTotal).sum();
+
+        // Use the new discount percent if provided, otherwise stick to what the order originally had
+        double discountPercent = editDto.getDiscountPercent() != null ? editDto.getDiscountPercent() : (order.getDiscountPercent() != null ? order.getDiscountPercent() : 0.0);
+        double newDiscountAmount = (newGrandTotal * discountPercent) / 100.0;
+
+        // 🌟 4. Dynamic Total Payable Logic
+        double finalTotalPayable;
+        if (editDto.getCustomTotalPayable() != null) {
+            // Case A: Strict manual override provided by user
+            finalTotalPayable = Math.max(0.0, editDto.getCustomTotalPayable());
+        } else {
+            // Case B: Auto-calculated fallback (Grand Total minus the Discount Percent applied!)
+            finalTotalPayable = Math.max(0.0, newGrandTotal - newDiscountAmount);
+        }
+
+        // Apply calculated updates back to core root document fields
+        order.setGrandTotal(newGrandTotal);
+        order.setDiscountPercent(discountPercent);
+        order.setDiscountAmount(newDiscountAmount);
+        order.setTotalPayable(finalTotalPayable);
+
+        // Sync structural nested sub-total amounts inside the array object tracking node
+        order.getAllOrders().get(0).setTotalAmount(newGrandTotal);
+
+        completeOrderRepository.save(order);
+
+        // 5. Adjust Customer analytics metrics with final delta shift balance
+        double financialDelta = finalTotalPayable - oldTotalPayable;
+        if (StringUtils.hasText(order.getCustomerMobile()) && !"0000000000".equals(order.getCustomerMobile())) {
+            Query query = new Query(Criteria.where("hotelId").is(hotelId).and("customerMobile").is(order.getCustomerMobile()));
+            Update update = new Update().inc("totalAmountPaid", financialDelta);
+            mongoTemplate.updateFirst(query, update, CustomerDetails.class);
+        }
+
+        log.info("EDIT_COMPLETED: Order {} processed. Mode: {}, Delta Shift: {}",
+                orderId, (editDto.getCustomTotalPayable() != null ? "MANUAL_OVERRIDE" : "AUTO_CALCULATED_DISCOUNT"), financialDelta);
+    }
+
+    /**
+     * 12. DELETE COMPLETED ORDER: Completely wipes out a bill document from the database collections
+     * and reverses the customer's aggregate stats to keep financial indicators synchronized.
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "dashboardStatsCache", key = "#hotelId"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-today'"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-week'"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-month'"),
+            @CacheEvict(value = "orderCache", key = "#hotelId + '-year'")
+    })
+    @Transactional
+    public void deleteCompletedOrderById(String hotelId, String orderId) {
+        CompletedOrder order = completeOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Completed order not found with ID: " + orderId));
+
+        if (!order.getHotelId().equals(hotelId)) {
+            throw new RuntimeException("Unauthorized action. Resource isolation block mismatch.");
+        }
+
+        // Deduct history values from Customer profiles
+        if (StringUtils.hasText(order.getCustomerMobile()) && !"0000000000".equals(order.getCustomerMobile())) {
+            Query query = new Query(Criteria.where("hotelId").is(hotelId).and("customerMobile").is(order.getCustomerMobile()));
+            Update update = new Update()
+                    .inc("totalOrders", -1)
+                    .inc("totalAmountPaid", -order.getTotalPayable());
+
+            mongoTemplate.updateFirst(query, update, CustomerDetails.class);
+        }
+
+        // Hard drop from MongoDB collection
+        completeOrderRepository.delete(order);
+        log.info("DELETE_COMPLETED: Permanently removed finalized order document record ID: {}", orderId);
     }
 
     @CacheEvict(value = "dashboardStatsCache", key = "#hotelId")
