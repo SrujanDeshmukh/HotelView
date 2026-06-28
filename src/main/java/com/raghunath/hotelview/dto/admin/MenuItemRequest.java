@@ -22,6 +22,10 @@ public class MenuItemRequest {
 
     private String quantity;
 
+    private Double totalQuantity;
+
+    private String unit;
+
     private Boolean isVeg;
 
     private Boolean isAvailable;

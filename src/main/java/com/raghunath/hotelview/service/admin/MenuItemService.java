@@ -50,6 +50,8 @@ public class MenuItemService {
                 .imageUrl(request.getImageUrl())
                 .preparationTime(request.getPreparationTime())
                 .quantity(request.getQuantity())
+                .totalQuantity(request.getTotalQuantity()) // 🌟 Map Total Quantity
+                .unit(request.getUnit() != null ? request.getUnit().toUpperCase() : "PIECE") // 🌟 Map Unit Matrix
                 .createdAt(now)
                 .updatedAt(now)
                 .isApproved(true)

@@ -364,20 +364,78 @@ public class OrderService {
         }
 
         List<OrderItem> items = request.getItems();
-        Double grandTotal = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
+        if (items == null || items.isEmpty()) {
+            throw new RuntimeException("Cannot process checkout with empty items.");
+        }
 
+        Double grandTotal = items.stream().mapToDouble(OrderItem::getSubTotal).sum();
         Double discountPercent = request.getDiscountPercent() != null ? request.getDiscountPercent() : 0.0;
         Double discountAmount = (grandTotal * discountPercent) / 100.0;
         Double totalPayable = Math.max(0.0, grandTotal - discountAmount);
 
         ZonedDateTime nowIST = getISTNow();
 
-        // 2. IN-MEMORY TRANSIENT OBJECT
+        // 🌟 2. DYNAMIC INVENTORY STOCK DEDUCTION
+        for (OrderItem item : items) {
+            Optional<MenuItem> menuItemOpt = menuItemRepository.findByHotelIdAndName(hotelId, item.getItemName());
+
+            if (menuItemOpt.isPresent()) {
+                MenuItem menuItem = menuItemOpt.get();
+
+                if (menuItem.getTotalQuantity() != null && menuItem.getUnit() != null) {
+                    String incomingQtyStr = item.getQuantity() != null ? item.getQuantity().trim().toLowerCase() : "1";
+
+                    double extractedValue = 1.0;
+                    double finalDeduction = 0.0;
+
+                    // Safely isolate numeric parts (extracts decimals/numbers like 270 or 1.5)
+                    try {
+                        String numericPart = incomingQtyStr.replaceAll("[^0-9.]", "");
+                        if (StringUtils.hasText(numericPart)) {
+                            extractedValue = Double.parseDouble(numericPart);
+                        }
+                    } catch (Exception e) {
+                        log.error("INVENTORY_PARSE_ERR: Failed parsing quantity string '{}'", incomingQtyStr);
+                    }
+
+                    String adminUnit = menuItem.getUnit().toUpperCase();
+
+                    // Unit Conversion System Matrix Logic
+                    if (incomingQtyStr.contains("ml") && "LITER".equals(adminUnit)) {
+                        finalDeduction = extractedValue / 1000.0;
+                    } else if (incomingQtyStr.contains("gm") && "KG".equals(adminUnit)) {
+                        finalDeduction = extractedValue / 1000.0;
+                    } else if (incomingQtyStr.contains("cm") && "METER".equals(adminUnit)) {
+                        finalDeduction = extractedValue / 100.0;
+                    } else if (incomingQtyStr.contains("mm") && "METER".equals(adminUnit)) {
+                        finalDeduction = extractedValue / 1000.0;
+                    } else if (incomingQtyStr.contains("inch") && "FEET".equals(adminUnit)) {
+                        finalDeduction = extractedValue / 12.0;
+                    } else {
+                        // Fallback for direct unit matches (e.g., 2 kg for KG stock, or standard counts like 5 pieces)
+                        finalDeduction = extractedValue;
+                    }
+
+                    // Apply reduction and enforce zero floor boundary
+                    double updatedStock = Math.max(0.0, menuItem.getTotalQuantity() - finalDeduction);
+                    menuItem.setTotalQuantity(updatedStock);
+
+                    // Auto-disable visibility if stock completely empties out
+                    if (updatedStock <= 0.0) {
+                        menuItem.setIsAvailable(false);
+                    }
+
+                    menuItemRepository.save(menuItem);
+                }
+            }
+        }
+
+        // 3. IN-MEMORY TRANSIENT OBJECT
         KitchenOrder transientOrder = KitchenOrder.builder()
                 .items(items)
                 .build();
 
-        // 3. Prepare Bill Items
+        // 4. Prepare Bill Items
         List<CheckoutResponse.BillItem> billItems = items.stream()
                 .map(item -> CheckoutResponse.BillItem.builder()
                         .itemName(item.getItemName())
@@ -386,7 +444,7 @@ public class OrderService {
                         .build())
                 .toList();
 
-        // 4. Construct and Save CompletedOrder
+        // 5. Construct and Save CompletedOrder
         CompletedOrder finalBill = CompletedOrder.builder()
                 .hotelId(hotelId)
                 .orderType("INSTANT")
@@ -406,7 +464,7 @@ public class OrderService {
 
         CompletedOrder savedBill = completeOrderRepository.save(finalBill);
 
-        // 5. Build Response
+        // 6. Build Response
         String fullId = savedBill.getId();
         String shortId = (fullId != null && fullId.length() > 6) ? fullId.substring(fullId.length() - 6) : fullId;
 
