@@ -29,6 +29,8 @@ public class CompletedOrder {
     private Double discountAmount;
     private Double totalPayable;
 
+    private Double lastTotalPayable;
+
     private String checkoutBy;
     private String checkoutDate;
     private String checkoutTime;

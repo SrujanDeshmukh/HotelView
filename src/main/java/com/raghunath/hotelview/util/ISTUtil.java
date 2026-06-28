@@ -6,7 +6,7 @@ import java.time.ZonedDateTime;
 
 public class ISTUtil {
 
-    private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
+    public static final ZoneId IST = ZoneId.of("Asia/Kolkata");
 
     public static LocalDateTime nowIST() {
         return ZonedDateTime.now(IST).toLocalDateTime();

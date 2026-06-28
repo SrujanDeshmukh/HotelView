@@ -172,14 +172,10 @@ public class CompletedOrderService {
     }
 
     /**
-     * 11. EDIT COMPLETED ORDER: Fetches from DB, loops through the nested array items,
-     * updates matching item quantities (stored as Strings), recalculates sub-totals/grand-totals,
-     * supports a direct manual totalPayable override, and balances customer loyalty spending.
-     */
-    /**
-     * 11. DYNAMIC EDIT COMPLETED ORDER: Fetches from DB, allows quantity updates ONLY for existing items,
-     * recalculates item subTotals, and dynamically computes totalPayable using the new discount metrics
-     * if no manual custom total payable override is provided.
+     * 11. EDIT COMPLETED ORDER (Strict Overrides & 7-Day Limit)
+     * Overwrites quantities directly (allowing 0), saves historical billing totals,
+     * uses the direct total payable value from the payload without backend recalculation,
+     * and strictly restricts modifications to within 7 days of the checkout date.
      */
     @Caching(evict = {
             @CacheEvict(value = "dashboardStatsCache", key = "#hotelId"),
@@ -198,7 +194,18 @@ public class CompletedOrderService {
             throw new RuntimeException("Unauthorized action on this resource workspace");
         }
 
-        double oldTotalPayable = order.getTotalPayable() != null ? order.getTotalPayable() : 0.0;
+        if (order.getCheckoutDate() != null) {
+            try {
+                java.time.LocalDate checkoutDate = java.time.LocalDate.parse(order.getCheckoutDate());
+                java.time.LocalDate todayIST = java.time.LocalDate.now(com.raghunath.hotelview.util.ISTUtil.IST);
+
+                if (checkoutDate.plusDays(7).isBefore(todayIST)) {
+                    throw new RuntimeException("Modification denied: This completed order is older than 7 days.");
+                }
+            } catch (java.time.format.DateTimeParseException e) {
+                log.error("DATE_PARSE_ERROR: Failed to validate checkout timeline for order {}", orderId);
+            }
+        }
 
         if (order.getAllOrders() == null || order.getAllOrders().isEmpty()) {
             throw new RuntimeException("This completed order contains no inner order structural array elements");
@@ -206,7 +213,7 @@ public class CompletedOrderService {
 
         List<OrderItem> dbItems = order.getAllOrders().get(0).getItems();
 
-        // 2. Map and update matching item quantities strictly (Only if items array is passed)
+        // 🌟 3. MAP NEW QUANTITIES DIRECTLY (Allowing 0, No price/subtotal math calculations)
         if (editDto.getItems() != null && !editDto.getItems().isEmpty()) {
             for (CompletedOrderEditDTO.UpdatedItemPayload incomingItem : editDto.getItems()) {
                 OrderItem originalDbItem = dbItems.stream()
@@ -215,45 +222,28 @@ public class CompletedOrderService {
                         .orElseThrow(() -> new RuntimeException("Item '" + incomingItem.getItemName() +
                                 "' does not exist in the original bill. Only modifications are allowed."));
 
-                if (incomingItem.getQuantity() <= 0) {
-                    throw new RuntimeException("Quantity for '" + incomingItem.getItemName() + "' must be greater than 0.");
+                if (incomingItem.getQuantity() < 0) {
+                    throw new RuntimeException("Quantity for '" + incomingItem.getItemName() + "' cannot be negative.");
                 }
 
-                int oldQty = Integer.parseInt(originalDbItem.getQuantity().replaceAll("[^0-9]", ""));
-                double unitPrice = originalDbItem.getSubTotal() / oldQty;
-
+                // Directly assign the raw frontend parameter value
                 originalDbItem.setQuantity(String.valueOf(incomingItem.getQuantity()));
-                originalDbItem.setSubTotal(unitPrice * incomingItem.getQuantity());
-                originalDbItem.setPrice(unitPrice);
             }
         }
 
-        // 3. Financial math recalculations
-        double newGrandTotal = dbItems.stream().mapToDouble(OrderItem::getSubTotal).sum();
-
-        // Use the new discount percent if provided, otherwise stick to what the order originally had
-        double discountPercent = editDto.getDiscountPercent() != null ? editDto.getDiscountPercent() : (order.getDiscountPercent() != null ? order.getDiscountPercent() : 0.0);
-        double newDiscountAmount = (newGrandTotal * discountPercent) / 100.0;
-
-        // 🌟 4. Dynamic Total Payable Logic
-        double finalTotalPayable;
-        if (editDto.getCustomTotalPayable() != null) {
-            // Case A: Strict manual override provided by user
-            finalTotalPayable = Math.max(0.0, editDto.getCustomTotalPayable());
-        } else {
-            // Case B: Auto-calculated fallback (Grand Total minus the Discount Percent applied!)
-            finalTotalPayable = Math.max(0.0, newGrandTotal - newDiscountAmount);
+        // 🌟 4. FINANCIAL HISTORY TRACKING & STRICT TOTAL PAYABLE OVERRIDE
+        if (editDto.getCustomTotalPayable() == null) {
+            throw new RuntimeException("Total payable field value must be explicitly provided for this update operation.");
         }
 
-        // Apply calculated updates back to core root document fields
-        order.setGrandTotal(newGrandTotal);
-        order.setDiscountPercent(discountPercent);
-        order.setDiscountAmount(newDiscountAmount);
+        double oldTotalPayable = order.getTotalPayable() != null ? order.getTotalPayable() : 0.0;
+        double finalTotalPayable = Math.max(0.0, editDto.getCustomTotalPayable());
+
+        // Store the primary total payable to history field tracker before overwriting it
+        order.setLastTotalPayable(oldTotalPayable);
         order.setTotalPayable(finalTotalPayable);
 
-        // Sync structural nested sub-total amounts inside the array object tracking node
-        order.getAllOrders().get(0).setTotalAmount(newGrandTotal);
-
+        // Save back to MongoDB
         completeOrderRepository.save(order);
 
         // 5. Adjust Customer analytics metrics with final delta shift balance
@@ -264,8 +254,8 @@ public class CompletedOrderService {
             mongoTemplate.updateFirst(query, update, CustomerDetails.class);
         }
 
-        log.info("EDIT_COMPLETED: Order {} processed. Mode: {}, Delta Shift: {}",
-                orderId, (editDto.getCustomTotalPayable() != null ? "MANUAL_OVERRIDE" : "AUTO_CALCULATED_DISCOUNT"), financialDelta);
+        log.info("EDIT_COMPLETED: Order {} processed safely. Historical Total: {}, New Override Total: {}, Delta Shift: {}",
+                orderId, oldTotalPayable, finalTotalPayable, financialDelta);
     }
 
     /**
