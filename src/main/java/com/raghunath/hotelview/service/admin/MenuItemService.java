@@ -99,6 +99,8 @@ public class MenuItemService {
         existingItem.setImageUrl(dto.getImageUrl());
         existingItem.setPreparationTime(dto.getPreparationTime());
         existingItem.setQuantity(dto.getQuantity());
+        existingItem.setTotalQuantity(dto.getTotalQuantity());
+        existingItem.setUnit(dto.getUnit());
         existingItem.setUpdatedAt(LocalDateTime.now());
 
         MenuItem savedItem = menuItemRepository.save(existingItem);

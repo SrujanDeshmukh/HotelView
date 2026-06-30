@@ -21,6 +21,10 @@ public class MenuItemUpdateDTO {
 
     private String quantity;
 
+    private Double totalQuantity;
+
+    private String unit;
+
     private String description;
 
     @NotBlank(message = "Short code is required")
